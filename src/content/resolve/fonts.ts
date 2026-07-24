@@ -1,29 +1,23 @@
 /**
- * resolve/fonts.ts: @font-face resolution
+ * @font-face resolution.
  *
- * Pipeline position: resolve
- * Reads from Captured: root, fonts
- * Writes to Captured: fonts, with absolutized src, narrowed to the faces the snip renders
- *
- * Travel-with-the-snip rule for fonts: a used custom font must carry its
- * @font-face and an absolute src so it loads from the snip's new home.
- *
- * Why this exists: @font-face src urls are usually relative to the source page, so
- * pasted elsewhere they 404. This resolves them to absolute urls and narrows the
- * captured @font-face list to the faces the snip actually renders. A source page
- * commonly ships every weight of a family, light through bold, while a snipped
- * component renders only one or two, so narrowing to the used family is not
- * enough: the other weights are dead @font-face rules and dead font downloads.
- * The narrowing therefore matches on the full family, weight, and style that the
- * live subtree renders, resolved through the css-fonts-4 font-matching algorithm
- * so a request the family has no exact face for, such as weight 700 against a 600
- * bold, still keeps the face the browser substitutes. Requests are read from the
- * live computed styles across the root subtree and the generated-content
- * pseudo-elements, which pairs each rendered family with the weight and style it renders at, the
- * same "first family is the one that renders" ground truth assistive/fonts.ts
- * uses. Generic keywords (serif, system-ui,...) never match a captured
- * @font-face family, so they fall out naturally, no banned-keyword set needed.
- * Ported from v1 font-extractor.ts, rewritten.
+ * This runs in the resolve phase. It reads root and fonts and writes fonts, with absolutized
+ * src, narrowed to the faces the snip renders. The travel-with-the-snip rule for fonts is that
+ * a used custom font must carry its @font-face and an absolute src so it loads from the snip's
+ * new home. @font-face src urls are usually relative to the source page, so pasted elsewhere
+ * they 404. This resolves them to absolute urls and narrows the captured @font-face list to the
+ * faces the snip actually renders. A source page commonly ships every weight of a family, light
+ * through bold, while a snipped component renders only one or two, so narrowing to the used
+ * family is not enough, since the other weights are dead @font-face rules and dead font
+ * downloads. The narrowing therefore matches on the full family, weight, and style that the
+ * live subtree renders, resolved through the css-fonts-4 font-matching algorithm so a request
+ * the family has no exact face for, such as weight 700 against a 600 bold, still keeps the face
+ * the browser substitutes. Requests are read from the live computed styles across the root
+ * subtree and the generated-content pseudo-elements, which pairs each rendered family with the
+ * weight and style it renders at, the same "first family is the one that renders" ground truth
+ * assistive/fonts.ts uses. Generic keywords (serif, system-ui, and so on) never match a
+ * captured @font-face family, so they fall out naturally, no banned-keyword set needed. Ported
+ * from v1 font-extractor.ts, rewritten.
  */
 import type { Captured, FontFace } from '../types';
 
@@ -99,12 +93,12 @@ export function resolveFonts(captured: Captured): void {
 }
 
 /**
- * The faces to keep, in their captured order: a face survives when its family is
+ * The faces to keep, in their captured order. A face survives when its family is
  * rendered in the subtree and its (weight, style) is the one css font-matching
  * picks for one of that family's requests. A family with no request never
  * renders, so all of its faces drop.
  *
- * unicode-range subsetting is honored: a family split into latin, latin-ext, cyrillic,
+ * unicode-range subsetting is honored, so a family split into latin, latin-ext, cyrillic,
  * and further files, the next.js and google-fonts shape. Of the faces at the matched
  * (weight, style), only those whose range covers a codepoint the snip actually renders
  * survive, so a latin snip keeps the latin subset rather than an arbitrary first subset
@@ -227,7 +221,7 @@ function selectFaces(request: FaceRequest, faces: FontFace[], codepoints: Set<nu
  */
 function faceCoversCodepoints(font: FontFace, codepoints: Set<number>): boolean {
 	const descriptor = font.descriptors['unicode-range'];
-	if (!descriptor) return true; // No subsetting: the face covers everything.
+	if (!descriptor) return true; // No subsetting, the face covers everything.
 	if (codepoints.size === 0) return true; // Nothing to render, so do not drop on coverage.
 	const ranges = parseUnicodeRange(descriptor);
 	if (ranges.length === 0) return true; // Unparseable, so keep rather than wrongly drop.
@@ -334,7 +328,7 @@ function normalizeStyle(raw: string): string {
 	return 'normal';
 }
 
-/** Rewrite every url() inside an @font-face src to an absolute url. local()/data: untouched. */
+/** Rewrite every url() inside an @font-face src to an absolute url. local() and data urls untouched. */
 function absolutizeSrc(src: string, base: string): string {
 	return src.replace(URL_IN_SRC, (match, quote: string, url: string) => {
 		if (/^(data:|blob:|https?:)/i.test(url)) return match; // Already absolute or inline
@@ -346,11 +340,11 @@ function absolutizeSrc(src: string, base: string): string {
 	});
 }
 
-/** Strip quotes and trim a font-family token. The `font` shorthand may carry size/style noise, but the last comma-list entries are still family names. */
+/** Strip quotes and trim a font-family token. The `font` shorthand may carry size or style noise, but the last comma-list entries are still family names. */
 function normalizeFamily(raw: string): string {
 	return raw
 		.replace(/^["']|["']$/g, '')
-		.replace(/^\s*(?:\d+(?:\.\d+)?(?:px|rem|em|%)?\/?\S*\s+)+/, '') // Drop leading size/line-height from `font` shorthand
+		.replace(/^\s*(?:\d+(?:\.\d+)?(?:px|rem|em|%)?\/?\S*\s+)+/, '') // Drop leading size or line-height from `font` shorthand
 		.trim();
 }
 
@@ -366,7 +360,7 @@ function descriptorKey(font: FontFace): string {
 const FONT_MAGIC: Array<[string, string]> = [
 	['774f4632', 'font/woff2'], // wOF2
 	['774f4646', 'font/woff'], // wOFF
-	['4f54544f', 'font/otf'], // OTTO, an OpenType/CFF outline font
+	['4f54544f', 'font/otf'], // OTTO, an OpenType or CFF outline font
 	['74746366', 'font/collection'], // ttcf, a TrueType collection
 	['00010000', 'font/ttf'], // TrueType outlines
 	['74727565', 'font/ttf'], // 'true', a legacy TrueType tag
@@ -437,7 +431,7 @@ export function mergeIdenticalFaces(captured: Captured): void {
 	});
 }
 
-/** A face's identity for merging: its family, its byte payload, and every descriptor but weight. */
+/** A face's identity for merging, its family, its byte payload, and every descriptor but weight. */
 function faceMergeKey(font: FontFace): string {
 	const descriptors = Object.entries(font.descriptors)
 		.filter(([name]) => name !== 'font-weight')

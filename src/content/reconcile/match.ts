@@ -1,11 +1,10 @@
 /**
- * reconcile/match.ts: rule-to-element matching, the authored cascade
+ * Rule-to-element matching, the authored cascade.
  *
- * Pipeline position: reconcile
- * Reads from Captured: root, foundationRules, componentRules
- * Writes to Captured: nothing directly, but returns the authored cascade for bake.ts
+ * This runs in the reconcile phase. It reads root, foundationRules, and componentRules
+ * from Captured, writes nothing directly, and returns the authored cascade for bake.ts.
  *
- * Its principle is simple: it provides the authored side of the per-element
+ * Its principle is simple. It provides the authored side of the per-element
  * authored-vs-computed comparison.
  *
  * It exists because a captured element's appearance is the sum of every rule that
@@ -105,7 +104,7 @@ export interface BakeSpec {
  * Keeping the getComputedStyle read here, in the reconcile core, also keeps the
  * leaf handlers themselves free of it.
  *
- * @param captured - bakedStyles + clone mutated in place
+ * @param captured - bakedStyles and clone mutated in place
  * @param specs - the properties to consider, each with its default predicate
  */
 export function bakeNonDefaultProps(captured: Captured, specs: BakeSpec[]): void {
@@ -128,21 +127,21 @@ export function bakeNonDefaultProps(captured: Captured, specs: BakeSpec[]): void
 }
 
 /**
- * The fallback context for the redundancy test: the values a declaration would
+ * The fallback context for the redundancy test, the values a declaration would
  * resolve to if dropped, plus whether the element establishes a transform.
  */
 export interface RedundancyContext {
-	/** The value a NON-inherited property falls back to with no declaration: the
+	/** The value a NON-inherited property falls back to with no declaration, the
 	 * per-tag ua default for denoise, or the css initial value for a pseudo-element.
 	 * Undefined when no baseline is available, which keeps the declaration. */
 	defaultValue: string | undefined;
-	/** The value an INHERITED property falls back to with no declaration: the
+	/** The value an INHERITED property falls back to with no declaration, the
 	 * immediate parent's computed value for denoise, or the originating element's
 	 * computed value for a pseudo-element. Undefined when none, which keeps it. */
 	inheritedValue: string | undefined;
 	/** Whether this property inherits by default. See inheritsProperty. */
 	inherits: boolean;
-	/** Whether the element establishes a transform (transform/translate/rotate/scale). */
+	/** Whether the element establishes a transform (transform, translate, rotate, or scale). */
 	hasTransform: boolean;
 	/** Whether the element establishes perspective. */
 	hasPerspective: boolean;
@@ -178,27 +177,27 @@ export function isRedundantDecl(prop: string, value: string, ctx: RedundancyCont
 	// pure noise. Real durations stay so a polish-added :hover still animates.
 	if (prop === 'transition') return isInertTransition(v);
 	if (prop.startsWith('transition-')) return false;
-	// transform-origin/perspective-origin resolve to per-element pixels, so a probe
+	// transform-origin and perspective-origin resolve to per-element pixels, so a probe
 	// default is not comparable, and act only on a box that has a transform or
 	// perspective. Without one they render identically whether present or not.
 	if (prop === 'transform-origin') return !ctx.hasTransform;
 	if (prop === 'perspective-origin') return !ctx.hasTransform && !ctx.hasPerspective;
-	// Layout/used-value properties resolve to per-element pixels. A probe value is a
+	// Layout and used-value properties resolve to per-element pixels. A probe value is a
 	// different element's pixels, so equality is meaningless. Geometry is baked
 	// deliberately, so keep it.
 	if (LAYOUT_PROPS.has(prop)) return false;
-	// Inherited: redundant only when it equals the value the element inherits anyway.
+	// An inherited property is redundant only when it equals the value the element inherits anyway.
 	// Compared against the immediate parent, never initial, so an explicit value that
 	// overrides an inheriting ancestor is never mistaken for a default.
 	if (ctx.inherits) return ctx.inheritedValue !== undefined && v === ctx.inheritedValue.trim();
-	// Non-inherited, non-layout: redundant when it equals the property's default,
+	// A non-inherited, non-layout property is redundant when it equals the property's default,
 	// because dropping it falls back to exactly that default.
 	return ctx.defaultValue !== undefined && v === ctx.defaultValue.trim();
 }
 
 /**
- * Reads the transform/perspective context an element or pseudo-element establishes,
- * used to decide whether transform-origin/perspective-origin have any effect.
+ * Reads the transform and perspective context an element or pseudo-element establishes,
+ * used to decide whether transform-origin and perspective-origin have any effect.
  *
  * @param cs - the element's computed style
  * @returns whether a transform and a perspective are present
@@ -249,10 +248,10 @@ export function subtreeElements(root: Element): Element[] {
 /**
  * Decides whether a rule contributes to an element's authored cascade.
  *
- * Uses the browser's live matcher so descendant/child combinators resolve
+ * Uses the browser's live matcher so descendant and child combinators resolve
  * against the real ancestor chain. Excludes pseudo-element rules, which target
- * ::before/::marker rather than the element and are owned by the pseudo handler, and
- * rules gated by an @media query that does not currently apply. @container/@supports
+ * ::before and ::marker rather than the element and are owned by the pseudo handler, and
+ * rules gated by an @media query that does not currently apply. @container and @supports
  * are not gated here. The bake probe validates every property against the
  * captured computed value, so an over-included rule can only fall back to
  * computed, never corrupt output.
@@ -310,13 +309,13 @@ function foldInlineStyle(el: Element, ranked: Map<string, RankedDecl>, order: nu
 	}
 }
 
-/** Keep the cascade winner for a property: !important first, then specificity, then order. */
+/** Keep the cascade winner for a property, !important first, then specificity, then order. */
 function record(ranked: Map<string, RankedDecl>, prop: string, decl: RankedDecl): void {
 	const cur = ranked.get(prop);
 	if (!cur || wins(decl, cur)) ranked.set(prop, decl);
 }
 
-/** Cascade ordering: !important beats normal, then higher specificity, then later order. */
+/** Cascade ordering, !important beats normal, then higher specificity, then later order. */
 function wins(a: RankedDecl, b: RankedDecl): boolean {
 	if (a.important !== b.important) return a.important;
 	if (a.specificity !== b.specificity) return a.specificity > b.specificity;
@@ -330,7 +329,7 @@ function resolveWinners(ranked: Map<string, RankedDecl>): Map<string, string> {
 	return out;
 }
 
-/** A transition with no duration (or none/all) animates nothing and is inert at rest. */
+/** A transition with no duration (or none or all) animates nothing and is inert at rest. */
 function isInertTransition(value: string): boolean {
 	return value === 'none' || value === 'all' || /^all 0s\b/.test(value) || /^0s\b/.test(value);
 }
@@ -348,8 +347,8 @@ const LAYOUT_PROPS = new Set([
 ]);
 
 /**
- * Properties that inherit by default, per the css cascade specs: CSS2.2 plus the
- * text/font/list/table modules and their webkit aliases. Over- or under-stating
+ * Properties that inherit by default, per the css cascade specs, CSS2.2 plus the
+ * text, font, list, and table modules and their webkit aliases. Over- or under-stating
  * this set could drop a value that does not truly fall back, so it errs toward the
  * documented inherited list.
  */

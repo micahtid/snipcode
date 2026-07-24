@@ -1,26 +1,22 @@
 /**
- * capture/picker.ts: in-page element picker overlay
+ * In-page element picker overlay.
  *
- * Pipeline position: capture (the front door, produces the chosen Element)
- * Reads from Captured: n/a (runs before Captured exists)
- * Writes to Captured: n/a (hands the chosen Element + screenshot to the orchestrator)
+ * This is the front door of the capture phase, and it produces the chosen Element. It runs
+ * before Captured exists and writes nothing, handing the chosen Element and screenshot to the
+ * orchestrator. Every snip starts with the user choosing an element. This overlay gives live
+ * visual feedback, a bright spotlight cut into a dimmed page, faint crosshair guide lines, and
+ * a tag and size tooltip, that tracks whatever is under the pointer, then resolves to the
+ * chosen element on click. Ported, rewritten not copied, from v1 element-selector.ts. The
+ * meaningful v2 change is the sticky arrow-climb, which v1 lacked, letting the user grab a
+ * wrapping container instead of the leaf they happen to be hovering.
  *
- * Why this exists: every snip starts with the user choosing an element. This
- * overlay gives live visual feedback, a bright spotlight cut into a dimmed page,
- * faint crosshair guide lines, and a tag/size tooltip, that tracks whatever is
- * under the pointer, then resolves to
- * the chosen element on click. Ported, rewritten not copied, from v1
- * element-selector.ts. The meaningful v2 change is the sticky arrow-climb, which
- * v1 lacked, letting the user grab a wrapping container instead of the leaf they
- * happen to be hovering.
+ * The climb is sticky, so arrowup walks to the parent, arrowdown walks back down toward the
+ * leaf the cursor is over, and a climbed selection is preserved while the pointer stays inside
+ * it. A plain mousemove no longer snaps back to the leaf, which was the regression that made
+ * wrapping containers unreachable. Moving the pointer out of the selection re-baselines to the
+ * fresh leaf under the cursor.
  *
- * The climb is sticky: arrowup walks to the parent, arrowdown walks back down
- * toward the leaf the cursor is over, and a climbed selection is preserved while
- * the pointer stays inside it. A plain mousemove no longer snaps back to the leaf,
- * which was the regression that made wrapping containers unreachable. Moving the
- * pointer out of the selection re-baselines to the fresh leaf under the cursor.
- *
- * Multi-select (snip mode only, opt-in via the `multi` option): pressing shift turns the mode
+ * Multi-select (snip mode only, opt-in via the `multi` option) works as follows. Pressing shift turns the mode
  * on, and it stays on with the key released, so every plain click then pins or unpins. Shift
  * is a switch rather than a modifier to hold, because shift plus wheel is chrome's
  * horizontal-scroll binding, so a mode that required shift to stay held would make the page
@@ -61,13 +57,17 @@ export interface PickerOptions {
 interface Pinned extends Pick {
 	box: HTMLDivElement;
 	badge: HTMLDivElement;
+	// The element's last measured border rect. Pins only move on scroll or resize, which
+	// re-measure them in positionPin, so the scrim reuses this cached rect instead of
+	// calling getBoundingClientRect on every hover frame.
+	rect: DOMRect;
 }
 
 const OVERLAY_ID = 'snipcode-overlay';
 const TOOLTIP_ID = 'snipcode-tooltip';
 const BANNER_ID = 'snipcode-multiselect';
 const SCRIM_ID = 'snipcode-scrim';
-// The live hover highlight sits on top; the persistent pin outlines one below it.
+// The live hover highlight sits on top, the persistent pin outlines one below it.
 const Z_OVERLAY = 2147483647;
 const Z_PINS = 2147483646;
 // The dimming scrim sits below the outlines, so those paint over the veil, and above the
@@ -178,7 +178,7 @@ export class ElementPicker {
 		loadChromeFont();
 		this.measureViewport();
 		this.buildChrome();
-		// mousemove and scroll never call preventDefault, so mark them passive: the browser can
+		// mousemove and scroll never call preventDefault, so mark them passive, the browser can
 		// then dispatch them without waiting to see if we cancel, which keeps scrolling and
 		// pointer tracking off the critical path. Click and keydown stay cancelable.
 		document.addEventListener('mousemove', this.onMove, { capture: true, passive: true });
@@ -220,7 +220,7 @@ export class ElementPicker {
 		this.scrim?.remove();
 		this.latched = false;
 		this.guides.forEach((g) => g.remove());
-		// Pins are chrome too: an esc or a panel-side cancel clears the whole selection,
+		// Pins are chrome too, so an esc or a panel-side cancel clears the whole selection,
 		// exactly as it clears the climb state above.
 		this.pins.forEach((pin) => pin.box.remove());
 		this.pins = [];
@@ -235,7 +235,7 @@ export class ElementPicker {
 		// The scrim dims the whole page and is cut with a hole for the hovered element and one
 		// for every pin, so a pinned element stays lit even once the cursor leaves it. The holes
 		// are a clip-path rather than a box-shadow, because a box-shadow can only cut one hole and
-		// multi-select needs many; the clip-path is transitioned so the hover hole glides between
+		// multi-select needs many, and the clip-path is transitioned so the hover hole glides between
 		// elements rather than snapping, as long as the pin set (and so the path's shape) holds.
 		const scrim = document.createElement('div');
 		scrim.id = SCRIM_ID;
@@ -247,7 +247,7 @@ export class ElementPicker {
 			background: SCRIM_BG,
 			// A short, subtle clip-path transition so the spotlight eases between elements rather
 			// than snapping. Kept brief because animating a full-screen clip repaints the scrim
-			// each frame; the rAF throttle and same-element guard keep it firing only on real
+			// each frame, the rAF throttle and same-element guard keep it firing only on real
 			// element changes, so a quick ease stays cheap. The crosshair glides via a composited
 			// transform, which carries most of the smooth feel at no paint cost.
 			transition: `clip-path ${SCRIM_EASE}, opacity 0.2s ease-out`,
@@ -258,14 +258,14 @@ export class ElementPicker {
 
 		// The hover highlight is the bright hole the scrim cuts for the current element, not an
 		// outline. This element stays as the invisible tracker that follows the pointer and marks
-		// the picker as live; it draws nothing itself.
+		// the picker as live, and it draws nothing itself.
 		const overlay = document.createElement('div');
 		overlay.id = OVERLAY_ID;
 		Object.assign(overlay.style, {
 			position: 'fixed',
 			zIndex: String(Z_OVERLAY),
-			pointerEvents: 'none', // Never intercept the hover/click we track.
-			// Translate, which is gpu-composited, instead of top/left to avoid layout thrash.
+			pointerEvents: 'none', // Never intercept the hover or click we track.
+			// Translate, which is gpu-composited, instead of top or left to avoid layout thrash.
 			transform: 'translate(0,0)',
 			transition: 'opacity 0.2s ease-out',
 			top: '0',
@@ -351,19 +351,19 @@ export class ElementPicker {
 		// Crossing a gap between elements hits it constantly, which blinked the dim off and on, so
 		// hold the current highlight instead of re-targeting the whole page.
 		if (isPageRoot(el)) return;
-		// Sticky climb: while a climbed selection still contains the cursor, keep it.
+		// Sticky climb, so while a climbed selection still contains the cursor, keep it.
 		// Only track the leaf underneath so arrowdown has a floor to descend toward.
 		if (this.climbed && this.current && this.current !== el && this.current.contains(el)) {
 			this.leaf = el;
 			return;
 		}
-		// Same element, no climb: only the tooltip needs to follow the cursor. The box, guides,
+		// Same element, no climb, so only the tooltip needs to follow the cursor. The box, guides,
 		// and scrim are unchanged, so skip re-framing and, above all, re-clipping the scrim.
 		if (el === this.current && !this.climbed) {
 			this.label(el, this.lastX, this.lastY);
 			return;
 		}
-		// Fresh target under the cursor: re-baseline and drop any climb.
+		// Fresh target under the cursor, so re-baseline and drop any climb.
 		this.leaf = el;
 		this.current = el;
 		this.climbed = false;
@@ -415,11 +415,11 @@ export class ElementPicker {
 	}
 
 	/**
-	 * Build the veil's clip path: a bright hole for the hovered element and one for every pin.
+	 * Build the veil's clip path, a bright hole for the hovered element and one for every pin.
 	 * Pure reads and string work, no style writes, so the caller can batch it before its writes.
 	 *
 	 * The even-odd rule cancels one hole nested inside another, painting the inner region dark,
-	 * so holes must never nest. Two rules keep that from happening: the hover hole is dropped
+	 * so holes must never nest. Two rules keep that from happening. The hover hole is dropped
 	 * when a pin already lights it (the pointer sits on or inside a pinned element), and a pin's
 	 * hole is dropped when the hover hole already encloses it (the pointer sits on an ancestor of
 	 * a pinned element). Either way the outer hole lights the whole region and the inner one is
@@ -436,7 +436,7 @@ export class ElementPicker {
 		if (useHover && hoverRect) rects.push(hoverRect);
 		for (const pin of this.pins) {
 			if (useHover && useHover !== pin.element && useHover.contains(pin.element)) continue; // Enclosed by the hover hole.
-			rects.push(pin.element.getBoundingClientRect());
+			rects.push(pin.rect); // Cached at pin time and on every scroll or resize settle, pins move only then.
 		}
 		if (rects.length === 0) return null;
 		const w = this.viewportW;
@@ -464,7 +464,7 @@ export class ElementPicker {
 			this.lastHoleCount = 0;
 			return;
 		}
-		// Only ease when the hole count is unchanged; a changed count is not interpolable and
+		// Only ease when the hole count is unchanged, since a changed count is not interpolable and
 		// flashes, so snap it by dropping the clip-path from the transition for this update.
 		const snap = clip.count !== this.lastHoleCount;
 		this.lastHoleCount = clip.count;
@@ -513,11 +513,11 @@ export class ElementPicker {
 
 	/**
 	 * Flip multi-select on or off. Turning it on before any click is the whole point of the
-	 * latch; turning it off again is allowed only while nothing is pinned yet, since once a
+	 * latch. Turning it off again is allowed only while nothing is pinned yet, since once a
 	 * collection exists enter finishes it and esc cancels it, and a stray shift must not throw
 	 * the collection away. No-op outside snip mode, where multi-select is not offered.
 	 *
-	 * This is the one entry point for both shift paths: the page-side keydown below, and the
+	 * This is the one entry point for both shift paths, the page-side keydown below, and the
 	 * panel-side keydown that App forwards as TOGGLE_MULTI while keyboard focus still sits in
 	 * the side panel, before a pin has moved focus onto the page.
 	 */
@@ -528,7 +528,7 @@ export class ElementPicker {
 	}
 
 	private readonly onKey = (e: KeyboardEvent): void => {
-		// Shift is the mode's switch, not a modifier to hold: pressing it turns multi-select on
+		// Shift is the mode's switch, not a modifier to hold, so pressing it turns multi-select on
 		// there and then, before any click, and pressing it again turns it back off as long as
 		// nothing is selected yet. Repeats are ignored, since holding the key down would
 		// otherwise flip the mode many times a second.
@@ -544,13 +544,13 @@ export class ElementPicker {
 			return;
 		}
 		// Enter is the one finish for a latched multi-select. The mode is explicit rather than
-		// held, so it needs an explicit end; the indicator names this key.
+		// held, so it needs an explicit end, and the indicator names this key.
 		if (e.key === 'Enter' && this.latched && this.pins.length > 0) {
 			e.preventDefault();
 			void this.finishBatch();
 			return;
 		}
-		// Arrowup: climb to the parent so the user can grab a wrapping container
+		// Arrowup climbs to the parent so the user can grab a wrapping container
 		// rather than the leaf under the cursor. The climb is sticky, see onMove,
 		// and the tooltip is re-rendered so the user sees which element they are
 		// now on.
@@ -562,7 +562,7 @@ export class ElementPicker {
 			this.label(this.current, this.lastX, this.lastY);
 			return;
 		}
-		// Arrowdown: walk back down one step toward the leaf under the cursor, undoing
+		// Arrowdown walks back down one step toward the leaf under the cursor, undoing
 		// one climb. Bottoming out at the leaf clears the climb so mousemove tracks again.
 		if (e.key === 'ArrowDown' && this.current && this.leaf && this.current !== this.leaf && this.current.contains(this.leaf)) {
 			e.preventDefault();
@@ -601,7 +601,7 @@ export class ElementPicker {
 		this.scrollTimer = window.setTimeout(() => {
 			this.scrolling = false;
 			this.scrollTimer = null;
-			this.measureViewport(); // A resize may have changed it; refresh once things settle.
+			this.measureViewport(); // A resize may have changed it, refresh once things settle.
 			this.repositionPins();
 			this.reacquire();
 		}, SCROLL_SETTLE);
@@ -615,11 +615,11 @@ export class ElementPicker {
 		if (!this.active || this.scrolling || this.capturing) return;
 		const el = document.elementFromPoint(this.lastX, this.lastY);
 		if (!el || el === this.overlay || el === this.tooltip || el === this.banner || this.guides.includes(el as HTMLDivElement)) return;
-		if (isPageRoot(el)) return; // Never re-target the whole page; see trackPointer.
+		if (isPageRoot(el)) return; // Never re-target the whole page, see trackPointer.
 		this.leaf = el;
 		this.current = el;
 		this.climbed = false;
-		this.frame(el, true); // Snap into place: the page just jumped under the pointer.
+		this.frame(el, true); // Snap into place, the page just jumped under the pointer.
 		this.label(el, this.lastX, this.lastY);
 	}
 
@@ -661,8 +661,8 @@ export class ElementPicker {
 			this.pins[existing]!.box.remove();
 			this.pins.splice(existing, 1);
 			this.renumberPins();
-			// Snap the scrim: a pin change reorders the holes (the toggled element crosses the
-			// pin/hover boundary), and animating that reordering shuffles every hole around even
+			// Snap the scrim, since a pin change reorders the holes (the toggled element crosses the
+			// pin or hover boundary), and animating that reordering shuffles every hole around even
 			// though nothing moved. The count-based snap misses it because the count often holds.
 			this.lastHoleCount = -1;
 			this.updateScrim();
@@ -674,7 +674,8 @@ export class ElementPicker {
 			return;
 		}
 		const { box, badge } = this.buildPinBox();
-		const pin: Pinned = { element, screenshot: '', box, badge };
+		// Seed rect at construction so strict mode has it set, and positionPin refreshes it below.
+		const pin: Pinned = { element, screenshot: '', box, badge, rect: element.getBoundingClientRect() };
 		this.pins.push(pin);
 		this.renumberPins();
 		this.positionPin(pin);
@@ -702,7 +703,7 @@ export class ElementPicker {
 	/**
 	 * Refuse a pin visibly. A silent no-op reads as a broken click, so the conflicting pin
 	 * blinks and the tooltip says which selection is in the way. The batch is never ended by
-	 * a rejection: the overlay stays live and shift stays held.
+	 * a rejection, so the overlay stays live and shift stays held.
 	 *
 	 * @param conflict - the pin standing in the way
 	 * @param inside - true when the candidate sits inside the conflicting pin
@@ -727,7 +728,7 @@ export class ElementPicker {
 	}
 
 	/**
-	 * The per-pin element: an invisible box that tracks the pinned element's rect and anchors
+	 * The per-pin element, an invisible box that tracks the pinned element's rect and anchors
 	 * its number badge at the corner. The pinned element is shown lit by its scrim hole, so the
 	 * box itself draws no outline.
 	 */
@@ -761,7 +762,7 @@ export class ElementPicker {
 			color: '#fff',
 			font: `600 11px ${CHROME_FONT}`,
 			borderRadius: `${BADGE_RADIUS}px`,
-			// No ring and no shadow: either reads as a second mark and makes the badge look noisy.
+			// No ring and no shadow, since either reads as a second mark and makes the badge look noisy.
 			transform: 'scale(0.6)',
 			transition: 'transform 0.12s cubic-bezier(0.22, 1, 0.36, 1)',
 		} satisfies Partial<CSSStyleDeclaration>);
@@ -794,6 +795,8 @@ export class ElementPicker {
 	 */
 	private positionPin(pin: Pinned): void {
 		const r = pin.element.getBoundingClientRect();
+		// Cache the fresh rect so buildScrimClip reuses it rather than re-measuring per hover frame.
+		pin.rect = r;
 		Object.assign(pin.box.style, {
 			transform: `translate(${r.left}px, ${r.top}px)`,
 			width: `${r.width}px`,
@@ -806,7 +809,7 @@ export class ElementPicker {
 		});
 	}
 
-	/** Re-measure every pin after a scroll or resize, since the boxes are position:fixed. */
+	/** Re-measure every pin after a scroll or resize, since the boxes use position fixed. */
 	private repositionPins(): void {
 		this.pins.forEach((pin) => this.positionPin(pin));
 		this.updateScrim(); // The pins' holes moved with the page.
@@ -838,7 +841,7 @@ export class ElementPicker {
 
 	/**
 	 * Draw, update, or remove the multi-select indicator. The mode is latched rather than held,
-	 * so nothing about the user's hands says it is on; this strip is the only thing that does.
+	 * so nothing about the user's hands says it is on, and this strip is the only thing that does.
 	 * It sits against the bottom edge, away from the page headers users most often snip, and
 	 * names the count and the keys that end the mode.
 	 */
@@ -872,7 +875,7 @@ export class ElementPicker {
 			this.banner = banner;
 		}
 		// The count shows from the first shift press, at zero, so the mode is unmistakably on
-		// before any element is picked. The tail hint follows what is possible yet: nothing to
+		// before any element is picked. The tail hint follows what is possible yet, nothing to
 		// snip at zero, so it names the way back out instead.
 		const count = this.pins.length;
 		const tail = count === 0 ? 'Shift to Exit' : 'Enter to Snip · Esc to Cancel';
@@ -900,7 +903,7 @@ export class ElementPicker {
 	}
 
 	/**
-	 * End a multi-select: wait for any in-flight screenshot, tear the overlay down, and hand
+	 * End a multi-select. Wait for any in-flight screenshot, tear the overlay down, and hand
 	 * every pin to onSelectMany in pin order. Guarded so two events arriving together cannot
 	 * ship the batch twice.
 	 */
@@ -961,7 +964,7 @@ function childTowardLeaf(ancestor: Element, leaf: Element): Element | null {
  * The privileged screenshot lives in the background worker, since content scripts
  * cannot call chrome.tabs.captureVisibleTab, so this messages CAPTURE_SCREENSHOT
  * and crops the returned full-viewport image to the element rect. A 24px pad
- * keeps drop shadows and ::before/::after decorations that bleed outside the
+ * keeps drop shadows and ::before and ::after decorations that bleed outside the
  * border box. Accounts for devicePixelRatio so css px map to device px.
  *
  * @param element - the element to crop around
@@ -1045,7 +1048,7 @@ export function anyOverlap(rects: Rect[]): boolean {
 /**
  * Rebuild a set of possibly-overlapping rectangles into an equivalent set of non-overlapping
  * ones covering the exact same area. Overlapping holes cannot be expressed as clip-path
- * sub-paths without darkening their overlap, so the union is decomposed instead: the distinct
+ * sub-paths without darkening their overlap, so the union is decomposed instead, the distinct
  * edge coordinates split the plane into a grid, every cell that falls inside any input rect is
  * kept, and each row's kept cells are merged into horizontal runs to keep the piece count low.
  * The result tiles the union with disjoint rectangles, which clip cleanly.
@@ -1093,8 +1096,8 @@ function cryptoId(): string {
  * means a sticky header or a floating bar it has scrolled beneath.
  *
  * It hit-tests one point, the element's center clamped into the viewport, and asks whether
- * the topmost node there still belongs to the element. Our own chrome is pointer-events:none
- * so it is never the answer. One point rather than four corners on purpose: this runs for
+ * the topmost node there still belongs to the element. Our own chrome is pointer-events none
+ * so it is never the answer. One point rather than four corners on purpose, since this runs for
  * every pin on every scroll settle, a corner can legitimately sit under a neighbor without
  * the element being covered, and the result only drives an opacity.
  *
@@ -1106,7 +1109,7 @@ function isOccluded(element: Element, r: DOMRect): boolean {
 	if (r.width === 0 || r.height === 0) return false;
 	const x = Math.round(r.left + r.width / 2);
 	const y = Math.round(r.top + r.height / 2);
-	// Off screen entirely: nothing to be covered by, and elementFromPoint would answer null.
+	// Off screen entirely, so nothing to be covered by, and elementFromPoint would answer null.
 	if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight) return false;
 	const top = document.elementFromPoint(x, y);
 	if (!top) return false;
@@ -1121,10 +1124,10 @@ const CHROME_FONT = `'${OVERLAY_FONT}', ui-sans-serif, system-ui, sans-serif`;
  * are set in the same face as the side panel, rather than in whatever the system supplies.
  *
  * It is registered through the FontFace api rather than by injecting an @font-face rule,
- * deliberately: an injected rule joins document.styleSheets, which capture/sheets.ts walks,
- * so the extension's own font would become a candidate face in the user's snip. A FontFace
- * added to document.fonts is invisible to that walk. Best-effort throughout, since the whole
- * point is cosmetic and no failure here may block a snip; the stack falls back on its own.
+ * deliberately, since an injected rule joins document.styleSheets, which capture/sheets.ts
+ * walks, so the extension's own font would become a candidate face in the user's snip. A
+ * FontFace added to document.fonts is invisible to that walk. Best-effort throughout, since the
+ * whole point is cosmetic and no failure here may block a snip, and the stack falls back on its own.
  */
 function loadChromeFont(): void {
 	if (fontRequested) return;

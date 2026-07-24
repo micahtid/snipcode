@@ -1,25 +1,22 @@
 /**
- * capture/cdp.ts: privileged capture augmentation (inherited chain and cross-origin sheets)
+ * Privileged capture augmentation for the inherited chain and cross-origin sheets.
  *
- * Pipeline position: capture
- * Reads from Captured: root, element.selector, inaccessible.crossOriginStylesheets
- * Writes to Captured: foundationRules from cdp inherited rules, componentRules,
- * variables, fonts, keyframes recovered cross-origin, inaccessible
+ * This runs in the capture phase. It reads root, element.selector, and
+ * inaccessible.crossOriginStylesheets, and writes foundationRules from cdp inherited rules,
+ * plus componentRules, variables, fonts, and keyframes recovered cross-origin, and
+ * inaccessible. It feeds the inheritance bake, since the cdp inherited chain is the authored
+ * ancestor cascade that bake.ts later bakes onto the snip root.
  *
- * Feeds the inheritance bake. The cdp inherited chain is the authored ancestor
- * cascade that bake.ts later bakes onto the snip root.
+ * There are two things the content script cannot do alone. First, it reads the *authored*
+ * ancestor cascade, the devtools "inherited from" section. Only the chrome devtools protocol
+ * exposes it, and chrome.debugger is background-only. Second, it reads cross-origin
+ * stylesheets blocked by the same-origin policy, which only a background fetch with <all_urls>
+ * host permission can do. Both are delegated to the background worker over capture-internal
+ * messages (CDP_INHERITED and FETCH_STYLESHEET).
  *
- * Why this exists: two things the content script cannot do alone. First, it reads
- * the *authored* ancestor cascade, the devtools "inherited from" section. Only the
- * chrome devtools protocol exposes it, and chrome.debugger is background-only.
- * Second, it reads cross-origin stylesheets blocked by the same-origin policy,
- * which only a background fetch with <all_urls> host permission can do. Both are
- * delegated to the background worker over capture-internal messages
- * (CDP_INHERITED / FETCH_STYLESHEET).
- *
- * The v2 change versus v1 is that DOM.getDocument runs with { pierce: true } so
- * the document tree includes closed shadow roots, letting the inherited chain
- * resolve through them. The full shadow handler lands later.
+ * The v2 change versus v1 is that DOM.getDocument runs with { pierce: true } so the document
+ * tree includes closed shadow roots, letting the inherited chain resolve through them. The
+ * full shadow handler lands later.
  */
 import type { Captured, CssRule } from '../types';
 import { parseCssText, specificityOf } from './sheets';
@@ -46,7 +43,7 @@ interface CdpInheritedResult {
  *
  * Tags the live root with a unique attribute, asks the background to attach the
  * debugger and read CSS.getMatchedStylesForNode().inherited for that node, then
- * folds the ancestor rules into foundationRules. It soft-fails: if the debugger is
+ * folds the ancestor rules into foundationRules. It soft-fails, so if the debugger is
  * busy (for example when devtools is open) or attach is refused, the snip
  * continues on cssom data alone with a warning. cdp is an enhancement, never a
  * hard dependency.
@@ -71,7 +68,7 @@ export async function augmentInheritedChainViaCDP(captured: Captured): Promise<v
 		}
 		const { inherited, closedShadowRoots, warning } = res.result;
 		if (warning) captured.warnings.push(warning);
-		// Pierce:true means cdp saw the closed roots, so record how many for transparency.
+		// Pierce true means cdp saw the closed roots, so record how many for transparency.
 		captured.inaccessible.closedShadowRoots = closedShadowRoots;
 
 		for (const rule of inherited) {

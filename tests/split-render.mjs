@@ -1,4 +1,4 @@
-// Split-asset verification: the split index.html must be render-faithful to the inlined output.html.
+// Split-asset verification that the split index.html is render-faithful to the inlined output.html.
 //
 // Both come from the same frozen snip (one capture), so any difference is the asset split's
 // doing, never live drift. Externalizing an inline svg to an <img> or a data-uri image to a
@@ -25,7 +25,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { findBundles, readSource } from './run-pipeline.mjs';
 
-/** Boxes of every element that is neither an svg/img nor inside an svg, which is the stable page
+/** Boxes of every element that is not an svg or img and is not inside an svg, which is the stable page
  * chrome whose layout an asset split must not disturb. Plus the srcs of any <img> that failed to load. */
 const PAGE_PROBE = () => {
 	const insideSvg = (el) => { for (let p = el.parentElement; p; p = p.parentElement) if (p.tagName.toLowerCase() === 'svg') return true; return false; };
@@ -62,7 +62,7 @@ async function pixelDiff(a, b) {
 }
 
 /**
- * Structural verdict for one bundle: the number of chrome elements whose box shifts past the
+ * Structural verdict for one bundle, giving the number of chrome elements whose box shifts past the
  * inline-layout tolerance and the largest shift seen. A mismatched element count, or any
  * element beyond tolerance, is a regression. Isolated sub-pixel jitter is the floor.
  */

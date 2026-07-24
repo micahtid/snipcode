@@ -1,17 +1,13 @@
 /**
- * inspect/schema/classify.ts: semantic element classifier
+ * Semantic element classifier.
  *
- * Pipeline position: inspect, page-scoped. It reads the live dom directly and does not run the element pipeline.
- * Reads from DOM: document/window. This runs live, on per-element computed styles.
- * Writes to: nothing. This is pure classification.
- *
- * Principles applied: none. This is classification.
- *
- * Why this exists: the schema walk needs each element's semantic role, such as
+ * This is a page-scan inspector that reads the live dom directly and does not run the element
+ * pipeline. It runs live, reads document and window on per-element computed styles, and writes
+ * nothing, a pure classification. The schema walk needs each element's semantic role, such as
  * heading, button, card, or container, to build the structure tree and group component
- * blueprints. Role is decided from aria role, then tag name, then style heuristics:
- * a card has a visual container shape, and a container is a flex/grid with children.
- * Ported by rewriting from v1 schema/dom-classifier.ts.
+ * blueprints. Role is decided from aria role, then tag name, then style heuristics. A card has a
+ * visual container shape, and a container is a flex or grid with children. This was ported and
+ * rewritten from v1 schema/dom-classifier.ts.
  */
 
 /** The semantic roles an element can be classified into. */
@@ -52,7 +48,7 @@ export function classifyElement(element: Element): SemanticRole {
 	if (ariaRole && ARIA_ROLE_MAP[ariaRole]) return ARIA_ROLE_MAP[ariaRole];
 	if (TAG_ROLE_MAP[tag]) return TAG_ROLE_MAP[tag];
 
-	// A div/span that behaves like a button: focusable or click-handled, with a pointer cursor.
+	// A div or span that behaves like a button, focusable or click-handled, with a pointer cursor.
 	if (element.getAttribute('tabindex') === '0' || element.getAttribute('onclick')) {
 		if (window.getComputedStyle(element).cursor === 'pointer') return 'button';
 	}
@@ -63,7 +59,7 @@ export function classifyElement(element: Element): SemanticRole {
 	return 'generic';
 }
 
-/** True when an element is rendered, by display/visibility/opacity and a non-zero box. */
+/** True when an element is rendered, tested against display, visibility, opacity, and a non-zero box. */
 export function isElementVisible(element: Element): boolean {
 	const computed = window.getComputedStyle(element);
 	if (computed.display === 'none' || computed.visibility === 'hidden' || computed.opacity === '0') return false;
@@ -72,7 +68,7 @@ export function isElementVisible(element: Element): boolean {
 }
 
 /**
- * Card heuristic: a visual container, meaning border / shadow / radius / background
+ * Card heuristic. A visual container, meaning border, shadow, radius, or background
  * that differs from its parent, with structured children, excluding modals, dialogs,
  * pills, tiny boxes, and absolutely-positioned decorations.
  */
@@ -96,7 +92,7 @@ function isCard(element: Element, computed: CSSStyleDeclaration): boolean {
 
 	if (!hasBorder && !hasShadow && !hasBgDifferentiation) return false;
 	if (element.children.length < 2) return false;
-	if (parseFloat(computed.borderRadius) > 9999) return false; // Pill / chip, not a card.
+	if (parseFloat(computed.borderRadius) > 9999) return false; // Pill or chip, not a card.
 
 	const rect = element.getBoundingClientRect();
 	if (rect.width < 120 || rect.height < 80) return false;
@@ -111,7 +107,7 @@ function isCard(element: Element, computed: CSSStyleDeclaration): boolean {
 	return visuallyCard || (hasBgDifferentiation && hasStructuredContent);
 }
 
-/** True for a flex/grid layout container with children. */
+/** True for a flex or grid layout container with children. */
 function isContainer(computed: CSSStyleDeclaration, element: Element): boolean {
 	const display = computed.display;
 	const isFlexOrGrid = display === 'flex' || display === 'inline-flex' || display === 'grid' || display === 'inline-grid';

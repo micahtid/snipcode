@@ -1,22 +1,17 @@
 /**
- * inspect/ai.ts: the optional byok ai pass for colors and schema
+ * The optional byok ai pass for colors and schema.
  *
- * Pipeline position: inspect, page-scoped. This is the optional byok finishing pass.
- * Reads from DOM: nothing. It operates on the already-extracted reports.
- * Writes to: nothing. It returns enhanced reports.
- *
- * Principles applied: none. This is orchestration.
- *
- * Why this exists: two inspectors gain an optional ai pass. Colors asks the user's
- * own llm to assign a semantic role to each extracted color. Schema asks it to
- * synthesize the raw page schema into a design-system json. This mirrors
- * polish/llm.ts exactly. It builds a prompt, delegates to the background broker, parses
- * the reply, and forwards the provider's token usage. The broker makes the call
- * because content scripts cannot reach provider hosts under the page csp. A missing
- * key is a silent no-op that returns the raw input unchanged. A configured-key
- * failure returns the raw input plus a warning so the panel can say why no roles
- * or synthesis landed. There is no double-ship and no state machine. It is the
- * same shape polish already proved.
+ * This is the optional byok finishing pass in the inspect phase, page-scoped. It reads nothing
+ * from the DOM, operating on the already-extracted reports, and writes nothing, returning
+ * enhanced reports. It is orchestration. Two inspectors gain an optional ai pass. Colors asks the
+ * user's own llm to assign a semantic role to each extracted color. Schema asks it to synthesize
+ * the raw page schema into a design-system json. This mirrors polish/llm.ts exactly. It builds a
+ * prompt, delegates to the background broker, parses the reply, and forwards the provider's token
+ * usage. The broker makes the call because content scripts cannot reach provider hosts under the
+ * page csp. A missing key is a silent no-op that returns the raw input unchanged. A configured-key
+ * failure returns the raw input plus a warning so the panel can say why no roles or synthesis
+ * landed. There is no double-ship and no state machine. It is the same shape polish already
+ * proved.
  */
 import type { Provider, TokenUsage } from '../types';
 import { requestLlm, NO_KEY } from '../llm';
@@ -123,7 +118,7 @@ function parseColorRoles(text: string): Map<string, string> {
 	return roles;
 }
 
-/** The first json object in the reply: a direct parse, a fenced block, or a brace match. */
+/** The first json object in the reply, from a direct parse, a fenced block, or a brace match. */
 function firstJsonObject(text: string): unknown | null {
 	const candidates = [text];
 	const fence = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);

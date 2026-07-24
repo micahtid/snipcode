@@ -1,17 +1,16 @@
 /**
- * minimize/colorize.ts: post-format serialization sanity for colors and saturating lengths
+ * Post-format serialization sanity for colors and saturating lengths.
  *
- * Pipeline position: minimize, last, after format
- * Reads from Captured: nothing
- * Writes to Captured: nothing. It transforms the formatted stylesheet string.
+ * This runs last in the minimize phase, after format. It reads nothing from Captured and
+ * writes nothing, transforming the formatted stylesheet string.
  *
- * Why this exists: the reproduce phase emits colors in whatever notation the engine
+ * The reproduce phase emits colors in whatever notation the engine
  * computed them to, verbose rgb(83, 58, 253) triples and rgba(31, 35, 40, 0.04)
  * functions. A human writes #533afd and #1f232809. This phase rewrites every rgb() and
- * rgba() function to a short hex, using the canvas 2d context as the authority: setting
+ * rgba() function to a short hex, using the canvas 2d context as the authority. Setting
  * fillStyle to the color yields the engine's own canonical form, so the rewrite is the
  * same color the browser would paint, by construction, with no color math here and no
- * gamut guesswork. Wide-gamut oklab/oklch/lab/lch/color() notations are never converted, so
+ * gamut guesswork. Wide-gamut oklab, oklch, lab, lch, and color() notations are never converted, so
  * they keep their color space rather than being clamped to the srgb gamut. Their numeric
  * components are only trimmed of the float noise a computed round-trip leaves, so
  * `oklab(0.999994 0.0000455678 0.0000200868 / 0.5)` reads as `oklab(1 0 0 / 0.5)`. And a
@@ -19,7 +18,7 @@
  * to a plain `9999px` that paints the same full pill on any real element.
  *
  * It is a pure string transform and runs last, after format, for two reasons. First, it
- * needs no render oracle. An rgb()/rgba() function and its canvas-canonical hex paint the
+ * needs no render oracle. An rgb() or rgba() function and its canvas-canonical hex paint the
  * identical pixel, a trimmed color component moves the pixel by less than a 24-bit step, and
  * a border radius past the saturation point paints the identical corner, so the rewrite
  * cannot move the render, in a resting rule, a state rule, a shadow, or a gradient alike.
@@ -37,11 +36,11 @@
  * hash token. Such a color keeps its delimited functional form.
  */
 
-/** A length in a border radius at or beyond this magnitude saturates the corner; clamp it. */
+/** A length in a border radius at or beyond this magnitude saturates the corner, so clamp it. */
 const RADIUS_SATURATION = 100000;
 
 /**
- * Rewrites every rgb()/rgba() color function to hex, trims the float noise from a wide-gamut
+ * Rewrites every rgb() or rgba() color function to hex, trims the float noise from a wide-gamut
  * color's components, and clamps a saturating border radius to `9999px`. It is graceful by
  * contract, returning the input unchanged when a canvas context is unavailable, and leaving any
  * function the context does not accept as a color exactly as it was.
@@ -76,7 +75,7 @@ export function colorizeCss(css: string): string {
 
 /**
  * Matches, in priority order, a double-quoted string, a single-quoted string, a url() span,
- * an rgb()/rgba() color function, or a wide-gamut color function with only simple numeric
+ * an rgb() or rgba() color function, or a wide-gamut color function with only simple numeric
  * arguments. The string and url alternatives come first so their contents are swallowed
  * before a color function inside them can match on its own. The wide-gamut alternative rejects
  * a nested paren, so a relative-color or calc() argument is left untouched.
@@ -120,8 +119,8 @@ function clampSaturatingRadii(css: string): string {
 const NAME_CHAR = /[-\w\u0080-\uffff]/;
 
 /**
- * One rgb()/rgba() function rewritten to hex, or unchanged when the context does not accept
- * it as a lone color. The canvas context is the authority: assigning the function to
+ * One rgb() or rgba() function rewritten to hex, or unchanged when the context does not accept
+ * it as a lone color. The canvas context is the authority. Assigning the function to
  * fillStyle yields the engine's canonical spelling, a #rrggbb hex for an opaque color and an
  * rgba() for a translucent one. An opaque color becomes the shortest hex and a translucent
  * one an eight-digit hex, both the same pixels the context would paint.

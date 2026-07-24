@@ -1,21 +1,20 @@
 /**
- * polish/llm.ts: polish-phase orchestrator, byok llm polish.
+ * Polish-phase orchestrator, byok llm polish.
  *
- * Pipeline position: polish.
- * This does not read from Captured. It operates on the emitted html and css.
- * It does not write to Captured. It returns polished html and css.
+ * This runs in the polish phase. It does not read from Captured. It operates on the emitted
+ * html and css. It does not write to Captured. It returns polished html and css.
  *
  * The orphan prune in restore.finalize removes only dead code.
  *
- * Why this exists: the polish phase is the optional, byok-gated finishing pass. It asks the
- * user's own llm, via the background broker, for two additive edits (semantic class renames
- * and hover/focus rules), then applies them locally. It never sends a key, because background
- * reads it from storage. It never blocks either. If no key is configured, or the request
- * fails, it returns the deterministic output of the earlier phases unchanged. Token-heavy
- * values are vaulted before the prompt so the model cannot corrupt them and the token bill
- * stays small. This was ported and rewritten from marketing-website openrouter.ts, taking
- * only the request shape and response parsing. None of the original's account,
- * credit-accounting, or backend-verification code came along.
+ * The polish phase is the optional, byok-gated finishing pass. It asks the user's own llm, via
+ * the background broker, for two additive edits (semantic class renames and hover and focus
+ * rules), then applies them locally. It never sends a key, because background reads it from
+ * storage. It never blocks either. If no key is configured, or the request fails, it returns
+ * the deterministic output of the earlier phases unchanged. Token-heavy values are vaulted
+ * before the prompt so the model cannot corrupt them and the token bill stays small. This was
+ * ported and rewritten from marketing-website openrouter.ts, taking only the request shape and
+ * response parsing. None of the original's account, credit-accounting, or backend-verification
+ * code came along.
  */
 import type { Captured, Provider, TokenUsage } from '../types';
 import { requestLlm, NO_KEY } from '../llm';
@@ -48,7 +47,7 @@ interface PolishEdits {
  * @param css - stylesheet from the earlier phases
  * @param provider - the active byok provider
  * @param model - the model to use, resolved by the caller from prefs/defaults
- * @returns polished html + css, the provider-reported token usage when an edit ran, plus a
+ * @returns polished html and css, the provider-reported token usage when an edit ran, plus a
  *   warning when a configured key was present but the request failed or the edit was reverted
  */
 export async function polish(

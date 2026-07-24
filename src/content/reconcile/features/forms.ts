@@ -1,28 +1,25 @@
 /**
- * features/forms.ts: form control rendering + state
+ * Form control rendering and state.
  *
- * Pipeline position: reconcile
- * Reads from Captured: root, clone
- * Writes to Captured: bakedStyles + clone, the appearance/accent-color + live state
+ * This is a reconcile-phase feature handler. It reads root and clone from Captured and
+ * writes bakedStyles and clone, the appearance and accent-color, and the live state. It
+ * extends the "ship what renders" rule to form-control styling, and it preserves the
+ * live control state that cloneNode drops.
  *
- * Principles applied: this extends the "ship what renders" rule to form-control
- * styling, and it preserves the live control state that cloneNode drops.
+ * The relevant spec is https://developer.mozilla.org/en-US/docs/Web/CSS/appearance,
+ * which also covers accent-color. ::file-selector-button is emitted by features/pseudo.
+ * It detects an element matching the form-control selector. That selector is the
+ * form-element spec surface expressed as a selector rather than a tag Set. It bakes
+ * non-default appearance, -webkit-appearance, and accent-color onto matching clone
+ * controls. It also mirrors the live value, checked, and selected state onto the clone
+ * as attributes, so the rendered control matches the capture. It touches bakedStyles
+ * and the clone only.
  *
- * CSS/spec reference: https://developer.mozilla.org/en-US/docs/Web/CSS/appearance
- * also covers accent-color. ::file-selector-button is emitted by features/pseudo.
- * Detection criterion: an element matching the form-control selector. That selector
- * is the form-element spec surface expressed as a selector rather than a tag Set.
- * Transform contract: it bakes non-default appearance, -webkit-appearance, and
- * accent-color onto matching clone controls. It also mirrors the live value,
- * checked, and selected state onto the clone as attributes, so the rendered control
- * matches the capture. It touches bakedStyles and the clone only.
- *
- * Why this exists: appearance: none is how authors replace native control chrome
- * with custom styling. If it is lost, the control snaps back to the os widget.
- * Accent-color tints checkboxes, radios, and range inputs. And cloneNode copies a
- * control's attributes but not its current value, checked, or selected state, so a
- * filled input or ticked checkbox renders empty in the clone. Mirroring the state
- * fixes that.
+ * appearance: none is how authors replace native control chrome with custom styling. If
+ * it is lost, the control snaps back to the os widget. Accent-color tints checkboxes,
+ * radios, and range inputs. And cloneNode copies a control's attributes but not its
+ * current value, checked, or selected state, so a filled input or ticked checkbox
+ * renders empty in the clone. Mirroring the state fixes that.
  */
 import type { Captured } from '../../types';
 import { pairedSubtrees } from '../match';
@@ -32,7 +29,7 @@ const FORM_CONTROL = 'input, select, textarea, button, meter, progress, option';
 /**
  * Bakes form-control styling and mirrors live control state onto the clone.
  *
- * @param captured - bakedStyles + clone mutated in place
+ * @param captured - bakedStyles and clone mutated in place
  */
 export function apply(captured: Captured): Captured {
 	for (const [original, clone] of pairedSubtrees(captured.root, captured.clone)) {
@@ -56,7 +53,7 @@ export function apply(captured: Captured): Captured {
 	return captured;
 }
 
-/** Mirror a control's live value/checked/selected onto the clone as attributes. */
+/** Mirror a control's live value, checked, and selected onto the clone as attributes. */
 function mirrorState(original: Element, clone: Element): void {
 	if (original instanceof HTMLInputElement && clone instanceof HTMLInputElement) {
 		if (original.type === 'checkbox' || original.type === 'radio') {
@@ -78,7 +75,7 @@ function mirrorState(original: Element, clone: Element): void {
 	}
 }
 
-/** Bake a value onto the clone + baked map when a predicate says it is non-default. */
+/** Bake a value onto the clone and baked map when a predicate says it is non-default. */
 function bake(clone: Element, baked: Map<string, string>, prop: string, value: string, isDefault: (v: string) => boolean): void {
 	if (baked.has(prop) || !value || isDefault(value)) return;
 	baked.set(prop, value);

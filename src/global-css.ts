@@ -1,23 +1,16 @@
 /**
- * Global-css.ts: the one injected stylesheet for the sidebar ui
+ * The one injected stylesheet for the sidebar ui.
  *
- * Pipeline position: n/a; ui foundation, not a pipeline phase
- * Reads from Captured: n/a
- * Writes to Captured: n/a
- *
- * Principles applied: none; ui.
- *
- * Why this exists: the v2 ui is otherwise styled with inline react style objects,
- * the established convention, since there are no .css files in the tree. A handful of things
- * cannot be expressed inline: @font-face, the cloud-backdrop geometry, and, most
- * importantly, interactive pseudo-states (:hover / :active / :disabled) and
- * ::-webkit-scrollbar / ::placeholder. Inline styles also win the cascade over
- * stylesheet rules, so a button whose base background is inline can never show a
- * :hover background. The fix used here: interactive controls, such as buttons,
- * inputs, and the mode toggle, are styled entirely by the classes below so their
- * pseudo-states work, while structural layout stays inline. App.tsx injects this
- * once on mount, keeping index.html bare, so the bundle owns all markup. Values come from
- * theme.ts so inline styles and these rules never drift.
+ * The v2 ui is otherwise styled with inline react style objects, the established convention,
+ * since there are no .css files in the tree. A handful of things cannot be expressed inline,
+ * namely @font-face, the cloud-backdrop geometry, and, most importantly, interactive
+ * pseudo-states like :hover, :active, and :disabled, plus ::-webkit-scrollbar and
+ * ::placeholder. Inline styles also win the cascade over stylesheet rules, so a button whose
+ * base background is inline can never show a :hover background. The fix used here is that
+ * interactive controls, such as buttons, inputs, and the mode toggle, are styled entirely by
+ * the classes below so their pseudo-states work, while structural layout stays inline. App.tsx
+ * injects this once on mount, keeping index.html bare, so the bundle owns all markup. Values
+ * come from theme.ts so inline styles and these rules never drift.
  */
 import { COLORS, FONT_CODE, FONT_UI, RADIUS, STATE, SURFACE, EASE_UI } from './theme';
 
@@ -26,7 +19,7 @@ const STYLE_ID = 'snipcode-global-css';
 
 /**
  * The full stylesheet, built from theme tokens. Font unicode-ranges are copied
- * from v1's fonts.css so latin + latin-ext subsets load identically.
+ * from v1's fonts.css so latin and latin-ext subsets load identically.
  */
 export const GLOBAL_CSS = `
 /* ---- Self-hosted fonts, served from the extension origin at /fonts. ---- */
@@ -75,7 +68,7 @@ body {
 	text-rendering: optimizeLegibility;
 }
 
-/* ---- Cloud backdrop geometry only; per-cloud values are inline in CloudBackdrop. ---- */
+/* ---- Cloud backdrop geometry only, per-cloud values are inline in CloudBackdrop. ---- */
 .cloud-backdrop { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; opacity: 0.4; }
 .cloud-sky { position: absolute; inset: 0; background: linear-gradient(to bottom, ${COLORS.sky0} 0%, ${COLORS.sky1} 45%, ${COLORS.sky2} 70%, ${COLORS.sky3} 100%); }
 .cloud-field { position: absolute; inset: 0; }
@@ -115,7 +108,7 @@ body {
 /* Compact modifier for inline actions such as test key. */
 .sc-btn-sm { height: 34px; width: auto; padding: 0 14px; font-size: 13px; border-radius: ${RADIUS.md}px; }
 
-/* ---- Split action in the capture footer: pick element + mode chevron. ---- */
+/* ---- Split action in the capture footer, pick element and mode chevron. ---- */
 .sc-split {
 	display: flex;
 	align-items: stretch;
@@ -155,7 +148,7 @@ body {
 .sc-split-chevron:hover:not(:disabled) { background: ${STATE.onDarkHoverStrong}; }
 .sc-split-chevron:active:not(:disabled) { transform: scale(0.94); }
 
-/* ---- Popover menu for the capture mode select; opens above the split action. ---- */
+/* ---- Popover menu for the capture mode select, opening above the split action. ---- */
 .sc-menu {
 	position: absolute;
 	left: 0;
@@ -191,7 +184,7 @@ body {
 /* Hairline between the element-pick modes and the page-scan modes in the menu. */
 .sc-menu-divider { height: 1px; margin: 4px 6px; background: ${SURFACE.border}; }
 
-/* ---- Page-scoped inspector card grid: fonts, colors, and assets. ---- */
+/* ---- Page-scoped inspector card grid for fonts, colors, and assets. ---- */
 .sc-inspect-grid {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -214,7 +207,7 @@ body {
 }
 .sc-inspect-card:hover { border-color: ${SURFACE.borderStrong}; background: ${COLORS.white}; box-shadow: ${SURFACE.shadow}; }
 .sc-inspect-card:active { transform: scale(0.98); }
-/* History list: a stored-snippet card, a clickable body plus its save toggle. */
+/* History list, a stored-snippet card, a clickable body plus its save toggle. */
 .sc-history-card {
 	display: flex;
 	align-items: center;
@@ -265,7 +258,7 @@ body {
 	color: ${COLORS.slate500};
 }
 .sc-section-title:first-child { margin-top: 0; }
-/* Fixed-size preview box on the card's left: font sample, color swatch, or thumbnail. */
+/* Fixed-size preview box on the card's left, a font sample, color swatch, or thumbnail. */
 .sc-inspect-preview {
 	display: inline-flex;
 	flex-shrink: 0;
@@ -286,7 +279,7 @@ body {
 .sc-asset-svg { display: inline-flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
 .sc-asset-svg svg { max-width: 100%; max-height: 100%; }
 
-/* ---- Icon nav for capture / history / settings; hover tooltips are native title attrs. ---- */
+/* ---- Icon nav for capture, history, and settings, with hover tooltips as native title attrs. ---- */
 .sc-navicon {
 	position: relative;
 	display: inline-flex;
@@ -319,9 +312,8 @@ body {
 	transition: color 0.15s ${EASE_UI};
 }
 .sc-tab:hover { color: ${COLORS.slate700}; }
-/* Active tab: the darkest text plus a heavier weight, no underline, so it clearly reads active. */
+/* Active tab, the darkest text plus a heavier weight, no underline, so it clearly reads active. */
 .sc-tab-active { color: ${COLORS.slate900}; font-weight: 700; }
-
 
 /* ---- Icon buttons for copy, save, more, overflow. ---- */
 .sc-icon-btn {
@@ -344,7 +336,7 @@ body {
 .sc-icon-btn-saved { color: ${COLORS.accent}; }
 .sc-icon-btn-saved:hover { color: ${COLORS.accent}; background: ${STATE.iconBtnHover}; }
 
-/* ---- Inputs + selects. ---- */
+/* ---- Inputs and selects. ---- */
 .sc-input {
 	width: 100%;
 	height: 36px;
@@ -365,7 +357,7 @@ body {
 
 /* Field wrapper hosting a masked input plus its in-field reveal eye. */
 .sc-key-field { position: relative; flex: 1; min-width: 0; }
-/* The eye sits just inside the right edge; the input's right padding clears its text. */
+/* The eye sits just inside the right edge, and the input's right padding clears its text. */
 .sc-key-reveal {
 	position: absolute;
 	top: 50%;
@@ -387,7 +379,7 @@ body {
 .sc-key-reveal:hover { color: ${COLORS.slate600}; background: ${STATE.iconBtnHover}; }
 .sc-key-reveal:active { color: ${COLORS.slate800}; transform: translateY(-50%) scale(0.92); }
 
-/* ---- Custom select for settings; opens in-flow so it pushes content below it down. ---- */
+/* ---- Custom select for settings, opening in-flow so it pushes content below it down. ---- */
 .sc-select { position: relative; }
 .sc-select-trigger {
 	display: flex;
@@ -439,7 +431,7 @@ body {
 .sc-select-option:hover { background: ${STATE.iconBtnHover}; color: ${COLORS.slate900}; }
 .sc-select-option-active { color: ${COLORS.accent}; font-weight: 600; }
 
-/* ---- Icon action button for the verify buttons beside the api/model inputs. ---- */
+/* ---- Icon action button for the verify buttons beside the api and model inputs. ---- */
 .sc-icon-action {
 	display: inline-flex;
 	align-items: center;
@@ -499,9 +491,9 @@ body {
 `;
 
 /**
- * Injects {@link GLOBAL_CSS} once into the document head. Idempotent: a second
+ * Injects {@link GLOBAL_CSS} once into the document head. It is idempotent, so a second
  * call, such as a hot-reload or a re-mount, finds the existing style by id and
- * no-ops, so the rules are never duplicated.
+ * no-ops, and the rules are never duplicated.
  */
 export function injectGlobalCss(): void {
 	if (document.getElementById(STYLE_ID)) return;

@@ -1,26 +1,20 @@
 /**
- * App.tsx: side-panel root + sidebar shell
+ * Side-panel root and sidebar shell.
  *
- * Pipeline position: n/a. Ui host, not a pipeline phase.
- * Reads from Captured: n/a
- * Writes to Captured: n/a
- *
- * Principles applied: none. Ui only.
- *
- * Why this exists: chrome opens this document in the side panel. It is the only
- * react root in the extension. It owns top-level navigation between the three
- * sidebar views: capture, history, and settings. It hosts the picker control and
- * is the panel-side terminus of the content-script signals:
+ * Chrome opens this document in the side panel. It is the only react root in the extension.
+ * It owns top-level navigation between the three sidebar views, capture, history, and
+ * settings. It hosts the picker control and is the panel-side terminus of the content-script
+ * signals.
  * - It listens for SNIP_RESULT, renders the emitted code in ResultPanel, and adds
  *   that snip's polish token usage to a running per-session total.
  * - It listens for SNIP_PROGRESS, which only a multi-select batch sends, and holds the
  *   count so the picker label reads "Snipping 2 of 3" instead of sitting on "Snipping".
- * - It listens for INSPECT_RESULT, a page scan, and renders it in InspectPanel; a
+ * - It listens for INSPECT_RESULT, a page scan, and renders it in InspectPanel. A
  *   snip and a scan are mutually exclusive, so each clears the other, and both add
  *   any byok token usage to the same per-session total.
  * - While a pick is in flight it owns the "picking" state and a window-level esc
- * handler that cancels the overlay even when keyboard focus is in the panel.
- * The picker's own esc handler only fires when the page holds focus.
+ *   handler that cancels the overlay even when keyboard focus is in the panel.
+ *   The picker's own esc handler only fires when the page holds focus.
  * It injects the global stylesheet once and paints the cloud backdrop behind a
  * frosted-glass shell, reproducing v1's look via theme.ts and global-css.ts.
  *
@@ -89,7 +83,7 @@ async function signalPicker(type: typeof CANCEL_PICKER | typeof TOGGLE_MULTI): P
 	try {
 		await chrome.tabs.sendMessage(tab.id, { type });
 	} catch {
-		// The overlay may already be gone: the page navigated or the tab closed. Harmless.
+		// The overlay may already be gone, the page navigated or the tab closed. Harmless.
 	}
 }
 
@@ -99,11 +93,11 @@ function persistShiftBannerDismissal(): void {
 }
 
 /**
- * The sidebar shell: the icon nav and the active view, which fills the rest of the
+ * The sidebar shell, the icon nav and the active view, which fills the rest of the
  * panel as a scrollable body with a footer pinned to the bottom. The chrome side
  * panel supplies the only title bar, so there is no app header of our own.
  *
- * Holds the cross-view ui state: current view, capture mode, in-flight pick, and
+ * Holds the cross-view ui state, the current view, capture mode, in-flight pick, and
  * the latest snip result. Also wires the content-script signals described in
  * the file header.
  */
@@ -119,15 +113,15 @@ function App() {
 	const [progress, setProgress] = useState<BatchProgress | null>(null);
 	const [result, setResult] = useState<SnipResult | null>(null);
 	const [inspect, setInspect] = useState<InspectResult | null>(null);
-	// Running token total for this panel session; resets when the side panel reloads.
+	// Running token total for this panel session, reset when the side panel reloads.
 	const [sessionTokens, setSessionTokens] = useState(0);
 	// Whether the shift multi-select hint should show. It gets the first ten panel opens, or
 	// fewer if the user closes it. It starts false rather than true so a retired hint never
-	// flashes in for the frame before the read resolves; arriving a frame late is fine,
+	// flashes in for the frame before the read resolves, arriving a frame late is fine,
 	// appearing and vanishing is not.
 	const [showShiftBanner, setShowShiftBanner] = useState(false);
 
-	// Inject the global stylesheet once: fonts, cloud geometry, control states.
+	// Inject the global stylesheet once, covering fonts, cloud geometry, and control states.
 	useEffect(() => injectGlobalCss(), []);
 
 	// Spend one of the hint's opens on mount, and show it if any were left.
@@ -151,9 +145,9 @@ function App() {
 					? (message as { type: unknown }).type
 					: null;
 			if (type === PICKER_SELECTED) {
-				setProcessing(true); // Element picked, pipeline running: past the point of cancelling.
+				setProcessing(true); // Element picked, pipeline running, past the point of cancelling.
 			} else if (type === PICKER_CANCELLED) {
-				// Esc on the page tore the overlay down there; leave the "Selecting" label to match.
+				// Esc on the page tore the overlay down there, so leave the "Selecting" label to match.
 				setPicking(false);
 				setProcessing(false);
 				setProgress(null);
@@ -177,7 +171,7 @@ function App() {
 				setView('capture');
 				setScanning(false); // The scan is formed, so drop the loading state.
 			}
-			return undefined; // No async response; do not hold the channel open.
+			return undefined; // No async response, do not hold the channel open.
 		};
 		const addUsage = (usage?: TokenUsage): void => {
 			if (usage) setSessionTokens((total) => total + usage.input + usage.output);
@@ -188,7 +182,7 @@ function App() {
 
 	// While selecting, before an element is picked, keys pressed with the panel focused are
 	// forwarded to the overlay, which cannot hear them itself until a pin moves focus onto the
-	// page. Esc cancels; shift toggles multi-select, the one way to turn it on before the first
+	// page. Esc cancels, and shift toggles multi-select, the one way to turn it on before the first
 	// click. Once the pipeline is running there is nothing to steer, so this unbinds.
 	useEffect(() => {
 		if (!picking || processing) return;
@@ -204,7 +198,7 @@ function App() {
 		return () => window.removeEventListener('keydown', onKey);
 	}, [picking, processing]);
 
-	/** enter/leave the in-flight pick state; a new pick clears whichever result is showing. */
+	/** Enter or leave the in-flight pick state, and a new pick clears whichever result is showing. */
 	const onPickingChange = (next: boolean): void => {
 		setPicking(next);
 		if (next) {
@@ -216,7 +210,7 @@ function App() {
 	};
 
 	/**
-	 * enter/leave the in-flight scan state; mirrors onPickingChange so a page scan shows the
+	 * Enter or leave the in-flight scan state, mirroring onPickingChange so a page scan shows the
 	 * same loading effect as a pick. A new scan clears whichever result is showing, so the
 	 * code block only reappears once the scan is formed, and INSPECT_RESULT ends the state.
 	 */

@@ -1,7 +1,7 @@
-// Picker end-to-end tests: the shift multi-select mechanics in content/capture/picker.ts.
+// Picker end-to-end tests of the shift multi-select mechanics in content/capture/picker.ts.
 //
 // The picker is pure dom and pointer behaviour, so it is exercised in a real headless
-// chromium rather than a fake dom: the module is bundled on its own with esbuild, loaded
+// chromium rather than a fake dom. The module is bundled on its own with esbuild, loaded
 // into a plain page next to a chrome.runtime stub that answers CAPTURE_SCREENSHOT, and
 // driven with real mouse and keyboard input so every event carries the shiftKey bit the
 // finish rule reads. Run with `npm run test:picker`.
@@ -20,7 +20,7 @@ const PICKER_SRC = path.resolve(HERE, '..', 'src', 'content', 'capture', 'picker
 const PNG_1X1 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
 // Three cards in a row plus a button nested inside the first, so a test can pin siblings
-// and a parent/child pair. Fixed positions keep the click coordinates predictable.
+// and a parent and child pair. Fixed positions keep the click coordinates predictable.
 const PAGE = `<!doctype html><meta charset="utf-8"><style>
 	body { margin: 0; background: #fff; }
 	.card { position: absolute; top: 40px; width: 160px; height: 120px; background: #eef; }
@@ -163,7 +163,7 @@ test('shift-click latches multi-select, and enter ships the batch in pin order',
 	// latched. This is what lets the user scroll, which shift plus wheel would otherwise steal.
 	await plainClick(page, AT.c);
 
-	// Still selecting: nothing has been snipped and both pins are outlined and numbered.
+	// Still selecting, nothing has been snipped and both pins are outlined and numbered.
 	assert.deepEqual(await page.evaluate(() => window.__events.selected), []);
 	assert.deepEqual(await badges(page), ['1', '2']);
 	// The indicator names the mode, since no held key signals it any more.
@@ -183,19 +183,19 @@ test('shift-click latches multi-select, and enter ships the batch in pin order',
 
 test('the dimming veil keeps a hole for the hover and every pin', async () => {
 	const page = await openPicker();
-	// One hovered element, no pins yet: the veil has a single hole.
+	// One hovered element and no pins yet, so the veil has a single hole.
 	await page.mouse.move(AT.a.x, AT.a.y);
 	await page.waitForFunction(() => document.getElementById('snipcode-scrim')?.style.display === 'block');
 	const holesFor = () =>
 		page.evaluate(() => {
-			// The clip path is one outer rect plus one sub-path per hole; count the extra moves.
+			// The clip path is one outer rect plus one sub-path per hole, so count the extra moves.
 			const clip = document.getElementById('snipcode-scrim').style.clipPath;
 			return Math.max(0, (clip.match(/M/g) || []).length - 1);
 		});
 	assert.equal(await holesFor(), 1);
 
-	// Pin b and c, then hover a, a sibling that contains neither: three distinct holes, so the
-	// pins stay lit while the pointer is on another element.
+	// Pin b and c, then hover a, a sibling that contains neither, which yields three distinct
+	// holes, so the pins stay lit while the pointer is on another element.
 	await shiftClick(page, AT.b);
 	await plainClick(page, AT.c);
 	await page.mouse.move(AT.a.x, AT.a.y);
@@ -316,7 +316,7 @@ test('toggleMulti drives the mode the same as a page-side shift', async () => {
 	await page.evaluate(() => window.__picker.toggleMulti());
 	await page.waitForSelector('#snipcode-multiselect');
 
-	// On now: a plain click pins rather than snips.
+	// On now, a plain click pins rather than snips.
 	await plainClick(page, AT.b);
 	assert.deepEqual(await badges(page), ['1']);
 
@@ -378,7 +378,7 @@ test('a pin that wraps an existing pin is refused', async () => {
 	assert.equal(await page.evaluate(() => window.__picker.pins.length), 1);
 	assert.equal(await page.evaluate(() => document.getElementById('snipcode-tooltip').textContent), 'Contains selection 1');
 
-	// The rejection never ends the batch: the one good pin still ships on enter.
+	// The rejection never ends the batch. The one good pin still ships on enter.
 	await page.keyboard.press('Enter');
 	await page.waitForFunction(() => window.__events.many !== null);
 	assert.deepEqual(await page.evaluate(() => window.__events.many.map((p) => p.id)), ['inner']);
@@ -440,7 +440,7 @@ test('pinned outlines are re-measured after a scroll', async () => {
 });
 
 test('without multi, shift-click snips a single element as before', async () => {
-	// Assistive mode keeps single-pick behaviour: n clipboard writes would overwrite each other.
+	// Assistive mode keeps single-pick behaviour, since n clipboard writes would overwrite each other.
 	const page = await openPicker({ multi: false });
 	await page.keyboard.down('Shift');
 	await page.mouse.move(AT.b.x, AT.b.y);

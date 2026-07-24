@@ -1,11 +1,10 @@
 /**
- * minimize/declarations.ts: shared css declaration-block parsing
+ * Shared css declaration-block parsing.
  *
- * Pipeline position: minimize, a helper for prune and normalize
- * Reads from Captured: nothing
- * Writes to Captured: nothing
+ * This runs in the minimize phase as a helper for prune and normalize, reading nothing from
+ * Captured and writing nothing.
  *
- * Why this exists: both the prune phase and the normalize phase need to split a rule's
+ * Both the prune phase and the normalize phase need to split a rule's
  * serialized declaration block into its author declarations, keeping shorthands whole and
  * never splitting on a semicolon inside a url, a function, or a quoted string, and both
  * need the same notion of which rules are in scope and how the surviving rules serialize.
@@ -13,7 +12,7 @@
  */
 
 /**
- * Selectors held out of every minimize phase: dynamic pseudo-classes, the measured-state
+ * Selectors held out of every minimize phase, the dynamic pseudo-classes, the measured-state
  * and pseudo-element markers, and any pseudo-element. These rules reproduce interactive and
  * generated-content states that are invisible at rest, so the resting-render oracle cannot
  * verify them and must not touch them. `:focus` also covers `:focus-visible` and
@@ -58,7 +57,7 @@ export function serializeRules(topRules: CSSRule[]): string {
 	return out.join('\n\n');
 }
 
-/** One author declaration parsed from a rule: its lowercased property and full text. */
+/** One author declaration parsed from a rule, its lowercased property and full text. */
 export interface Segment {
 	/** The lowercased property name. */
 	prop: string;

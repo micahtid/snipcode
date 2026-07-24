@@ -1,11 +1,11 @@
 /**
- * minimize/attributes.ts: strip unreferenced data attributes from the markup
+ * Strip unreferenced data attributes from the markup.
  *
- * Pipeline position: minimize, last, a markup pass after the css chain
- * Reads from Captured: nothing. It operates on the emitted markup and final stylesheet strings.
- * Writes to Captured: nothing. It returns the trimmed markup.
+ * This runs last in the minimize phase, a markup pass after the css chain. It reads nothing
+ * from Captured, operating on the emitted markup and final stylesheet strings, and writes
+ * nothing, returning the trimmed markup.
  *
- * Why this exists: a framework leaves scope and instrumentation attributes all over the
+ * A framework leaves scope and instrumentation attributes all over the
  * markup, such as `data-astro-cid-*` and `data-f1rd-a7s-click`, dozens per element, that no css
  * selector ever matches. A human writing this page by hand would carry none of them. This drops
  * every `data-*` attribute whose name no selector in the shipped stylesheet references, so the
@@ -27,7 +27,7 @@
 
 /**
  * Removes every `data-*` attribute the shipped stylesheet never references from the markup.
- * Deterministic and formatting-preserving: a pure string transform that edits only open tags.
+ * Deterministic and formatting-preserving, a pure string transform that edits only open tags.
  *
  * @param html - the pretty-printed emitted markup
  * @param css - the final shipped stylesheet, scanned for the attribute names its selectors use

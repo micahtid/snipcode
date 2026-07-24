@@ -1,17 +1,13 @@
 /**
- * components/ScissorsMark.tsx: the SnipCode brand mark, a pair of scissors
+ * The SnipCode brand mark, a pair of scissors.
  *
- * Pipeline position: n/a. Ui component, not a pipeline phase.
- * Reads from Captured: n/a
- * Writes to Captured: n/a
- *
- * Why this exists: the sidebar nav and any future branding need the product's own
- * scissors mark rather than a stock icon. It draws the same geometry as the exported
- * app icon: two ring handles and two blades that cross over and under, with the lower
- * blade split into two segments so the upper blade reads as passing across it. It
- * renders in a single currentColor so it sits beside the lucide nav icons without
- * clashing. The two-tone treatment, the blue badge and the stepped blade tip, belongs
- * to the exported icon files, not to the ui.
+ * The sidebar nav and any future branding need the product's own scissors mark rather
+ * than a stock icon. It draws the same geometry as the exported app icon, two ring
+ * handles and two blades that cross over and under, with the lower blade split into two
+ * segments so the upper blade reads as passing across it. It renders in a single
+ * currentColor so it sits beside the lucide nav icons without clashing. The two-tone
+ * treatment, the blue badge and the stepped blade tip, belongs to the exported icon
+ * files, not to the ui.
  */
 
 /** The brand scissors mark, sized and colored like a lucide nav icon. */

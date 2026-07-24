@@ -1,6 +1,6 @@
-// Scrim union unit tests: the hole-rectangle union in content/capture/picker.ts.
+// Scrim union unit tests for the hole-rectangle union in content/capture/picker.ts.
 //
-// The dimming veil cuts a bright hole per hovered/pinned element with an even-odd clip path.
+// The dimming veil cuts a bright hole per hovered or pinned element with an even-odd clip path.
 // Two overlapping holes cancel into a dark patch under that rule, so overlapping rectangles are
 // rebuilt into non-overlapping ones covering the same area first. These check that rebuild is
 // both disjoint and area-preserving, which is what guarantees no element ever blacks out. The
@@ -12,7 +12,7 @@ import { load } from './load-ts.mjs';
 
 const { rectsOverlap, anyOverlap, unionRects } = await load('content/capture/picker.ts');
 
-/** A rect from left/top/width/height, mirroring the DOMRect fields the union reads. */
+/** A rect from left, top, width, and height, mirroring the DOMRect fields the union reads. */
 function rect(left, top, width, height) {
 	return { left, top, right: left + width, bottom: top + height };
 }
@@ -50,7 +50,7 @@ test('unionRects makes two overlapping rects disjoint without changing the cover
 	const b = rect(50, 50, 100, 100);
 	const out = unionRects([a, b], 1000, 1000);
 	assert.ok(!hasOverlap(out), 'the union pieces must not overlap each other');
-	// Inclusion-exclusion: |A ∪ B| = |A| + |B| - |A ∩ B|. The overlap is a 50x50 square.
+	// By inclusion-exclusion, |A ∪ B| = |A| + |B| - |A ∩ B|. The overlap is a 50x50 square.
 	assert.equal(totalArea(out), 100 * 100 + 100 * 100 - 50 * 50);
 });
 

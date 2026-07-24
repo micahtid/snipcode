@@ -1,14 +1,11 @@
 /**
- * convert/jsx.ts: html -> jsx for react
+ * Html -> jsx for react.
  *
- * Pipeline position: convert
- * Reads from Captured: clone, via the tailwind and bem emitters
- * Writes to Captured: nothing
+ * This runs in the convert phase. It reads the clone via the tailwind and bem emitters and
+ * writes nothing back. It is a format transform of the baked result.
  *
- * A format transform of the baked result.
- *
- * Why this exists: the jsx-tailwind and jsx-css formats emit a
- * react component. Jsx is not html: attributes rename, so class becomes className, for becomes
+ * The jsx-tailwind and jsx-css formats emit a
+ * react component. Jsx is not html. Attributes rename, so class becomes className, for becomes
  * htmlFor, and hyphenated svg attrs camelCase, void elements self-close, and inline
  * style strings become style objects. This builds on the tailwind emitter
  * for jsx-tailwind or the bem-css emitter for jsx-css, then rewrites their html into
@@ -52,7 +49,7 @@ const REACT_ATTR: Record<string, string> = {
  * Emits the snip as a react component plus its stylesheet.
  *
  * @param captured - read-only
- * @param variant - 'tailwind' for className utilities or 'css' for bem classes + css
+ * @param variant - 'tailwind' for className utilities or 'css' for bem classes and css
  */
 export function emitJsx(captured: Captured, variant: 'tailwind' | 'css'): HtmlOutput {
 	const base = variant === 'tailwind' ? emitTailwind(captured) : emitBem(captured, false);
@@ -75,7 +72,7 @@ function elementToJsx(el: Element, depth: number): string {
 	return `${pad}<${tag}${attrs}>\n${children}\n${pad}</${tag}>`;
 }
 
-/** Serialize child element + text nodes as jsx, dropping empty whitespace. */
+/** Serialize child element and text nodes as jsx, dropping empty whitespace. */
 function childrenToJsx(el: Element, depth: number): string {
 	const pad = '\t'.repeat(depth);
 	const out: string[] = [];
@@ -109,7 +106,7 @@ function jsxAttrName(name: string): string {
 	if (name.startsWith('data-') || name.startsWith('aria-')) return name; // Kept verbatim in react
 	const renamed = REACT_ATTR[name];
 	if (renamed) return renamed;
-	if (name.includes('-')) return camelCase(name); // Svg attrs: stroke-width -> strokeWidth
+	if (name.includes('-')) return camelCase(name); // Svg attrs, stroke-width -> strokeWidth
 	return name;
 }
 

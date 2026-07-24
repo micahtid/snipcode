@@ -1,4 +1,4 @@
-// Readable-slice report. For each bundle it prints three sizes: the total index.html size
+// Readable-slice report. For each bundle it prints three sizes. The total index.html size
 // (what a user opens), the inlined output.html size, and the font-payload-excluded
 // style-rule slice (the part a user actually reads). The font-lift win shows as index.html
 // shrinking toward the font-excluded slice as the embedded @font-face bytes move into

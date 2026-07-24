@@ -1,6 +1,6 @@
-// Storage unit tests: the saved-flag rules in utils/storage.ts.
+// Storage unit tests for the saved-flag rules in utils/storage.ts.
 //
-// These cover the three behaviours the save feature depends on: the 50-cap counts unsaved
+// These cover the three behaviours the save feature depends on. The 50-cap counts unsaved
 // records only, Clear History keeps saved records, and the save toggle re-applies the cap
 // when a record is unsaved. Run with `npm run test:unit`.
 
@@ -47,7 +47,7 @@ test('storeSnippet evicts the oldest unsaved record past the cap', async () => {
 });
 
 test('storeSnippet never evicts saved records, and the cap counts unsaved only', async () => {
-	// 10 saved, then 50 unsaved: already at the cap, with the saved ones exempt.
+	// 10 saved, then 50 unsaved, already at the cap with the saved ones exempt.
 	const saved = Array.from({ length: 10 }, (_, i) => record(`s${i}`, true));
 	const unsaved = Array.from({ length: 50 }, (_, i) => record(`u${i}`));
 	const { store, mod } = await fresh([...saved, ...unsaved]);
@@ -58,7 +58,7 @@ test('storeSnippet never evicts saved records, and the cap counts unsaved only',
 	assert.equal(ids.filter((id) => id.startsWith('s')).length, 10); // every saved record survived
 	assert.ok(!ids.includes('u0')); // the oldest unsaved was dropped
 	assert.ok(ids.includes('new'));
-	// Chronological order is preserved: saved records stay ahead of the unsaved ones they precede.
+	// Chronological order is preserved, so saved records stay ahead of the unsaved ones they precede.
 	assert.deepEqual(ids.slice(0, 10), saved.map((r) => r.id));
 });
 
@@ -98,7 +98,7 @@ test('setSnippetSaved is a no-op for an unknown id', async () => {
 });
 
 test('unsaving past the cap makes the record evictable again', async () => {
-	// 50 unsaved plus one saved: at the cap. Unsaving the saved one pushes unsaved to 51.
+	// 50 unsaved plus one saved, at the cap. Unsaving the saved one pushes unsaved to 51.
 	const unsaved = Array.from({ length: 50 }, (_, i) => record(`u${i}`));
 	const { store, mod } = await fresh([record('s', true), ...unsaved]);
 	await mod.setSnippetSaved('s', false);

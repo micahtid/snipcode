@@ -1,9 +1,9 @@
 /**
- * reconcile/bake.ts: style reconciliation
+ * Style reconciliation.
  *
- * Pipeline position: reconcile
- * Reads from Captured: root, clone, foundationRules, componentRules
- * Writes to Captured: bakedStyles per clone element, clone inline styles, and warnings
+ * This runs in the reconcile phase. It reads root, clone, foundationRules, and
+ * componentRules from Captured and writes bakedStyles per clone element, clone inline
+ * styles, and warnings.
  *
  * This module follows a few principles. It prefers authored CSS values that
  * round-trip to the same computed value. It bakes inherited values that diverge
@@ -13,19 +13,19 @@
  * travel with the snip. This module bakes the winning value of every authored
  * property onto each element so the snip renders standalone.
  *
- * Per element: if the authored value from match.ts reproduces the captured
+ * Per element, if the authored value from match.ts reproduces the captured
  * computed value when forced onto the live element, ship the authored string.
  * That preserves var(), clamp(), %, oklch(), and calc(). Otherwise ship the
  * computed value so pixel fidelity is locked at the capture viewport.
  *
- * Snip root only: inherited properties whose computed value at the root diverges
+ * On the snip root only, inherited properties whose computed value at the root diverges
  * from the document default are baked onto the root, so they survive when the
  * snip loses its ancestor chain. Children inherit from the root automatically, so
  * only the root needs them. The inherited-property list is read dynamically from
- * the browser via a parent/child probe, never hardcoded. The engine is the
+ * the browser via a parent and child probe, never hardcoded. The engine is the
  * authoritative source of which properties inherit anyway.
  *
- * Snip root only: if the root was a flex/grid item of a parent outside the snip,
+ * On the snip root only, if the root was a flex or grid item of a parent outside the snip,
  * its box size came from that vanished context. We bake the root's resolved
  * geometry so it renders at the same size standalone, with no synthetic wrapper
  * element.
@@ -39,7 +39,7 @@ import type { Captured } from '../types';
 import { authoredCascade } from './match';
 
 /**
- * Runs reconcile: bakes every element's authored cascade onto the detached
+ * Runs reconcile. It bakes every element's authored cascade onto the detached
  * clone, recording the result in bakedStyles and writing inline styles so the
  * clone serializes to standalone html.
  *
@@ -97,7 +97,7 @@ function bakeRootContext(original: Element, clone: Element, captured: Captured):
  * the document default.
  *
  * For each property in the root's computed style, this asks the browser two
- * questions via a detached probe: does the property inherit, and does the root's
+ * questions via a detached probe. Does the property inherit, and does the root's
  * value differ from a fresh same-tag element's default? If both, the value would
  * be lost when the snip is reparented, so it is baked onto the root. Per-element
  * authored values already baked are left untouched (authored wins).
@@ -127,7 +127,7 @@ function bakeInheritedDivergence(original: Element, baked: Map<string, string>):
 			const defaultVal = childDefault.getPropertyValue(prop);
 			if (rootVal === defaultVal) continue; // No divergence from default
 			// A property whose value merely equals the root's own `color` is resolving from its
-			// `currentcolor` initial value: -webkit-text-fill-color, -webkit-text-stroke-color,
+			// `currentcolor` initial value, namely -webkit-text-fill-color, -webkit-text-stroke-color,
 			// caret-color, text-emphasis-color, and their kin. Baking it freezes a concrete color
 			// onto the root that then inherits down and overrides every descendant, so a button
 			// that sets only a light `color` keeps inheriting the root's dark fill and paints dark.
@@ -147,7 +147,7 @@ function bakeInheritedDivergence(original: Element, baked: Map<string, string>):
 }
 
 /**
- * Dynamic inheritance test: sets `value` on the probe parent and checks whether
+ * Dynamic inheritance test. It sets `value` on the probe parent and checks whether
  * the probe child (which has no own declaration for the property) picks it up.
  * The value is the root's own computed value, always a valid css value for the
  * property, so the probe never needs a per-property sentinel.
@@ -167,12 +167,12 @@ function isInherited(parent: HTMLElement, child: Element, prop: string, value: s
 }
 
 /**
- * When the root was a flex/grid item of a parent outside the snip, its used
- * width/height came from that vanished container. Bake the resolved geometry so
+ * When the root was a flex or grid item of a parent outside the snip, its used
+ * width and height came from that vanished container. Bake the resolved geometry so
  * the root keeps its size standalone. No synthetic wrapper is created.
  *
- * width/height are named explicitly here because they are the specific geometry
- * a flex/grid container imposes on its items. That is a bounded css-spec mechanism
+ * width and height are named explicitly here because they are the specific geometry
+ * a flex or grid container imposes on its items. That is a bounded css-spec mechanism
  * rather than a curated heuristic Set, and it applies only when the escaped-context
  * condition holds.
  *
@@ -224,7 +224,7 @@ function bakeElement(original: Element, authored: Map<string, string>): Map<stri
 
 /**
  * Tests whether forcing `value` onto the element's inline style reproduces the
- * captured computed value, in the element's real context, so rem/%/var resolve
+ * captured computed value, in the element's real context, so rem, %, and var resolve
  * correctly. Transiently mutates then restores the live inline style within the
  * same synchronous frame, so the page never visibly changes.
  *

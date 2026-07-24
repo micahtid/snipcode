@@ -1,11 +1,11 @@
 /**
- * minimize/logical.ts: fold logical properties to physical
+ * Fold logical properties to physical.
  *
- * Pipeline position: minimize, after prune and before normalize
- * Reads from Captured: page.viewport via the oracle, plus warnings on graceful skip
- * Writes to Captured: nothing. It transforms the stylesheet string.
+ * This runs in the minimize phase, after prune and before normalize. It reads page.viewport
+ * from Captured through the oracle and appends warnings on a graceful skip, writing nothing
+ * and transforming the stylesheet string.
  *
- * Why this exists: the reproduce phase emits whatever the engine computed, which for a
+ * The reproduce phase emits whatever the engine computed, which for a
  * left-to-right, horizontal page is a mix of logical properties (margin-inline-start,
  * border-end-end-radius, inset-block) that a human writing that page would have spelled
  * physically as margin-left, border-bottom-right-radius, and top/bottom. Left as logical, four
@@ -46,7 +46,7 @@ export const LOGICAL_TO_PHYSICAL: Record<string, string> = {
 	'border-inline-end-width': 'border-right-width', 'border-inline-end-style': 'border-right-style', 'border-inline-end-color': 'border-right-color',
 };
 
-/** Two-value logical shorthands: the value's start half maps to the first physical side, the end half to the second. */
+/** Two-value logical shorthands, where the value's start half maps to the first physical side, the end half to the second. */
 const PAIR: Record<string, [string, string]> = {
 	'margin-block': ['margin-top', 'margin-bottom'], 'margin-inline': ['margin-left', 'margin-right'],
 	'padding-block': ['padding-top', 'padding-bottom'], 'padding-inline': ['padding-left', 'padding-right'],
@@ -108,7 +108,7 @@ function isHorizontalLtr(win: Window, el: Element): boolean {
 /**
  * Rewrites a rule's logical declarations to physical, or null when it holds none. Longhands
  * are renamed. A two-value logical shorthand splits across its two physical sides, and a border
- * block/inline shorthand copies its value to both. A non-logical declaration passes through.
+ * block or inline shorthand copies its value to both. A non-logical declaration passes through.
  */
 function rewrite(cssText: string): string | null {
 	let changed = false;

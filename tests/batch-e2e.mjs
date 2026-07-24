@@ -1,8 +1,8 @@
-// Batch end-to-end test: a real multi-select snip through the built extension.
+// Batch end-to-end test of a real multi-select snip through the built extension.
 //
 // The picker suite covers the pin mechanics and the panel suite covers rendering, but the
 // sequential batch runner in content/index.ts only exists when the whole extension is
-// loaded. This drives it for real: the built extension runs on a local page, the picker is
+// loaded. This drives it for real. The built extension runs on a local page, the picker is
 // started the way the panel starts it, two elements are shift-pinned with real input, and
 // the shipped SNIP_RESULT is read back from the service worker. Requires `npm run build`.
 // Run with `npm run test:batch`.
@@ -80,7 +80,7 @@ after(async () => {
 const AT = { one: { x: 140, y: 100 }, two: { x: 400, y: 100 }, three: { x: 660, y: 100 } };
 
 /**
- * Run one multi-select snip: open the fixture, start the picker the way the panel does, pin
+ * Run one multi-select snip. Open the fixture, start the picker the way the panel does, pin
  * each point in order, press enter, and wait for the batch result.
  *
  * @param points - the fixture points to pin, in pin order
@@ -101,7 +101,7 @@ async function runBatch(points) {
 	await page.waitForSelector('#snipcode-overlay', { state: 'attached' });
 
 	// The first click is shift-held to latch multi-select on. Every one after it is plain,
-	// which is the whole point of latching: shift never has to stay down.
+	// which is the whole point of latching. Shift never has to stay down.
 	await page.keyboard.down('Shift');
 	await page.mouse.move(points[0].x, points[0].y);
 	await page.mouse.click(points[0].x, points[0].y);

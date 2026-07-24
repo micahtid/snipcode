@@ -1,4 +1,4 @@
-// Polish unit tests: the grouping comment normalizer in polish/rename.ts.
+// Polish unit tests for the grouping comment normalizer in polish/rename.ts.
 //
 // The prompt asks for a capitalized, article-free noun phrase, but the model drifts, so the
 // format is enforced deterministically. These cover the drift cases and confirm an already

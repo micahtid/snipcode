@@ -1,11 +1,11 @@
 /**
- * minimize/transitions.ts: drop dead transition entries and group shared timing
+ * Drop dead transition entries and group shared timing.
  *
- * Pipeline position: minimize, after normalize and before merge and the at-rule purge
- * Reads from Captured: nothing
- * Writes to Captured: nothing. It transforms the normalized stylesheet string.
+ * This runs in the minimize phase, after normalize and before merge and the at-rule purge. It
+ * reads nothing from Captured and writes nothing, transforming the normalized stylesheet
+ * string.
  *
- * Why this exists: a Tailwind `transition-colors` or `transition` utility bakes a long
+ * A Tailwind `transition-colors` or `transition` utility bakes a long
  * enumerated list (`color, background-color, border-color, outline-color, fill, stroke,
  * --tw-gradient-from, ...`), each layer carrying the same duration and easing, onto the resting
  * rule. Most of those properties no state or animation ever changes, so their layers can never
@@ -33,7 +33,7 @@ import { splitTopLevelCommas, TIMING_LONGHANDS } from '../resolve/transition';
 /** The default each timing sub-list takes for a layer past its length, its css initial value. */
 const TIMING_DEFAULTS = ['0s', 'ease', '0s', 'normal'] as const;
 
-/** One transition layer: the property it animates and the timing it animates over. */
+/** One transition layer, the property it animates and the timing it animates over. */
 interface Layer {
 	property: string;
 	duration: string;
@@ -69,7 +69,7 @@ export function foldTransitions(css: string): string {
 	return serializeRules(rules);
 }
 
-/** Recursively folds every style rule's transition, descending into @media/@supports/@layer. */
+/** Recursively folds every style rule's transition, descending into @media, @supports, and @layer. */
 function foldRules(rules: CSSRule[], changed: Set<string>, reads: Set<string>, scratch: CSSStyleDeclaration): void {
 	for (const rule of rules) {
 		if (rule.type === CSSRule.STYLE_RULE) foldRuleTransition(rule as CSSStyleRule, changed, reads, scratch);
@@ -199,7 +199,7 @@ function clearTransition(style: CSSStyleDeclaration): void {
 }
 
 /**
- * Sets the grouped form: the property list against one duration, easing, and, where not the
+ * Sets the grouped form, the property list against one duration, easing, and, where not the
  * default, delay and behavior. The single timing values cycle across the property list, which
  * the cssom keeps as longhands rather than folding to the `transition` shorthand, exactly the
  * compact form a human writes for a list that shares one timing.

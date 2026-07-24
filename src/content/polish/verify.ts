@@ -1,16 +1,14 @@
 /**
- * polish/verify.ts: render-neutrality check for the llm polish edits.
+ * Render-neutrality check for the llm polish edits.
  *
- * Pipeline position: polish.
- * Reads from Captured: page.viewport, to size the frames.
- * It writes nothing to Captured. It operates on the pre-polish and post-polish html and css.
+ * This runs in the polish phase. It reads page.viewport from Captured, to size the frames. It
+ * writes nothing to Captured. It operates on the pre-polish and post-polish html and css.
  *
- * Why this exists: the polish pass takes edits from the user's own model (semantic class
- * renames, semantic tag swaps, and grouping comments), all meant to be render-neutral. A
- * model can still get one wrong, renaming a class inconsistently or swapping a tag whose ua
- * styles differ. This confirms the polished artifact renders identically to the pre-polish
- * one before it ships, so a bad edit falls back to the deterministic output rather than
- * degrading fidelity.
+ * The polish pass takes edits from the user's own model (semantic class renames, semantic tag
+ * swaps, and grouping comments), all meant to be render-neutral. A model can still get one
+ * wrong, renaming a class inconsistently or swapping a tag whose ua styles differ. This
+ * confirms the polished artifact renders identically to the pre-polish one before it ships, so
+ * a bad edit falls back to the deterministic output rather than degrading fidelity.
  *
  * The polish edits never add or remove elements. They only rename classes, swap tag names,
  * and add comments, so the two element trees are structurally identical and a lockstep walk
@@ -56,14 +54,14 @@ export function polishRenderNeutral(captured: Captured, preHtml: string, preCss:
 	}
 }
 
-/** A mounted document: the frame to tear down, its window, and its body. */
+/** A mounted document, the frame to tear down, its window, and its body. */
 interface Mounted {
 	frame: HTMLIFrameElement;
 	win: Window;
 	body: Element;
 }
 
-/** Mounts markup + css in a fresh standards-mode frame, returning its window and body. */
+/** Mounts markup and css in a fresh standards-mode frame, returning its window and body. */
 function mount(captured: Captured, html: string, css: string): Mounted {
 	const sized = createSizedFrame(captured, true);
 	const body = bodyOf(html);

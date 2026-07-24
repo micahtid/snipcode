@@ -1,17 +1,13 @@
 /**
- * capture/dom.ts: dom clone + element metadata extraction
+ * Dom clone and element metadata extraction.
  *
- * Pipeline position: capture
- * Reads from Captured: root, the live element
- * Writes to Captured: clone, element, the metadata block
- *
- * Why this exists: the pipeline mutates a detached copy of the picked subtree so
- * the live page is never touched. This module produces that copy and the element
- * metadata block of selectors, xpath, bounding box, and ancestors that both snip and
- * assistive modes consume. It also promotes lazy-loaded image
- * sources at clone time so images render when the snip is pasted elsewhere,
- * ported from v1 extraction-pipeline cloneElement. Shadow piercing is added
- * later via cdp. This is the cssom/light-dom baseline.
+ * This runs in the capture phase. It reads root, the live element, and writes clone and
+ * element, the metadata block. The pipeline mutates a detached copy of the picked subtree so
+ * the live page is never touched. This module produces that copy and the element metadata
+ * block of selectors, xpath, bounding box, and ancestors that both snip and assistive modes
+ * consume. It also promotes lazy-loaded image sources at clone time so images render when the
+ * snip is pasted elsewhere, ported from v1 extraction-pipeline cloneElement. Shadow piercing
+ * is added later via cdp. This is the cssom and light-dom baseline.
  */
 import type { Captured } from '../types';
 
@@ -58,7 +54,7 @@ function isPlaceholderSrc(src: string): boolean {
  * Builds the element metadata block.
  *
  * Both modes need this. The snip mode uses the tag/box, and the assistive mode
- * emits the whole block as json. It emits two selectors: `selector`, the shortest
+ * emits the whole block as json. It emits two selectors, `selector`, the shortest
  * unique one, and `robustSelector`, which prefers stable data-attributes or ids
  * over class hashes, so a downstream agent can re-find the element even if class
  * hashes churn.
@@ -96,7 +92,7 @@ export function serializeRaw(clone: Element): string {
 /**
  * Shortest css selector that uniquely identifies `el` in its document.
  *
- * Tries cheapest-first: a unique id, then a unique single-class, then walks up
+ * Tries cheapest-first, a unique id, then a unique single-class, then walks up
  * building a descendant path with :nth-of-type segments until querySelectorAll
  * returns exactly this element. Uniqueness is verified against the live document
  * rather than assumed, so the emitted selector is always correct.
@@ -132,7 +128,7 @@ function shortestSelector(el: Element): string {
 function robustSelector(el: Element): string {
 	const tag = el.tagName.toLowerCase();
 	for (const attr of el.getAttributeNames()) {
-		// Stable hooks are usually data-testid / data-section-id / data-id etc.
+		// Stable hooks are usually data-testid, data-section-id, data-id, and the like.
 		if (attr.startsWith('data-') && /id|test|section|name|component/.test(attr)) {
 			const val = el.getAttribute(attr);
 			if (val) {
@@ -160,7 +156,7 @@ function xpathOf(el: Element): string {
 	return `/${parts.join('/')}`;
 }
 
-/** The ancestor chain up to <body>, each with its own shortest selector + role. */
+/** The ancestor chain up to <body>, each with its own shortest selector and role. */
 function ancestorsOf(el: Element): Array<{ tagName: string; selector: string; role?: string }> {
 	const out: Array<{ tagName: string; selector: string; role?: string }> = [];
 	let node = el.parentElement;

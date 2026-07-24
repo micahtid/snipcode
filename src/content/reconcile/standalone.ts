@@ -1,9 +1,9 @@
 /**
- * reconcile/standalone.ts: standalone-context reconciliation + completeness probe
+ * Standalone-context reconciliation and completeness probe.
  *
- * Pipeline position: reconcile, the closing step, after bake + features + denoise
- * Reads from Captured: root, clone, bakedStyles, page.viewport
- * Writes to Captured: bakedStyles + clone in fix mode, warnings
+ * This runs in the reconcile phase as the closing step, after bake, features, and denoise.
+ * It reads root, clone, bakedStyles, and page.viewport from Captured and writes bakedStyles
+ * and clone in fix mode, plus warnings.
  *
  * It exists because bake.ts validates each authored value by forcing it onto the
  * LIVE element and re-reading getComputedStyle. That live-context test passes for
@@ -17,7 +17,7 @@
  * style. Where they diverge, the standalone artifact is wrong, so the original's
  * resolved value is baked, overriding any authored value that does not reproduce
  * standalone. One anchor fixes missing backgrounds, dangling tokens, lost display,
- * and collapsed box geometry at once, because they are all the same defect: a value
+ * and collapsed box geometry at once, because they are all the same defect, a value
  * that only resolved while the page was present.
  *
  * Box geometry is reconciled directionally, because the standalone render is the
@@ -31,7 +31,7 @@
  * a CSS category, replaced versus not, and the sign of the divergence, never a tolerance
  * constant. See shouldReclaim.
  *
- * The same anchor extends to structure: an element rendered in the original but
+ * The same anchor extends to structure, an element rendered in the original but
  * absent from the clone, silently dropped by some earlier handler, is restored, so a
  * dropped element is corrected universally rather than by special-casing the handler
  * that dropped it.
@@ -64,7 +64,7 @@ export interface StandaloneReport {
 	samples: Array<{ path: string; prop: string; live: string; standalone: string }>;
 }
 
-/** One direction of the emitted-artifact diff: the count, the worst properties, samples. */
+/** One direction of the emitted-artifact diff, the count, the worst properties, samples. */
 export interface EmittedDelta {
 	/** Total property discrepancies across all paired elements in this direction. */
 	droppedProps: number;
@@ -82,9 +82,9 @@ export interface EmittedDelta {
  * render-time cascade loss.
  */
 export interface EmittedReport {
-	/** Emitted standalone vs live original: the true shipped residual. */
+	/** Emitted standalone vs live original, the true shipped residual. */
 	deltaA: EmittedDelta;
-	/** Emitted standalone vs inline-clone standalone: the convert/emit cascade loss. */
+	/** Emitted standalone vs inline-clone standalone, the convert and emit cascade loss. */
 	deltaB: EmittedDelta;
 	/** The subset of delta-A discrepancies whose live value is absent from the emitted CSS. */
 	absentProps: number;
@@ -93,26 +93,26 @@ export interface EmittedReport {
 /**
  * Properties excluded from the standalone comparison, because a divergence there is
  * benign context rather than a lost style. What remains is precisely the blind spot the
- * directional reclaim closes (used size + insets). Everything skipped here is skipped
- * for a reason the directional rule cannot improve on:
+ * directional reclaim closes (used size and insets). Everything skipped here is skipped
+ * for a reason the directional rule cannot improve on.
  *
- * - Margins: a margin positions a box against siblings that did not travel with the
+ * - Margins. A margin positions a box against siblings that did not travel with the
  *   snip, so its standalone value is benign. The root's are zeroed separately
  *   (zeroRootMargin), and a descendant's re-derive from the recovered box.
- * - min/max sizes: the reconciliation pins the *used* size directly, as SIZE_PROPS lists,
+ * - min and max sizes. The reconciliation pins the *used* size directly, as SIZE_PROPS lists,
  *   which already overrides whatever bound produced it, so comparing the bound itself
  *   would be redundant.
- * - Geometry-derived and non-visual props: transform/perspective origins resolve from
+ * - Geometry-derived and non-visual props. Transform and perspective origins resolve from
  *   the box, and -webkit-locale is an input-method hint with no paint effect.
- * - Transition longhands: a transition describes the motion between two states and produces
+ * - Transition longhands. A transition describes the motion between two states and produces
  *   no pixels at rest, so the resting-render authority cannot judge it and must not reclaim
  *   it. Reconciling it toward the live value would collapse a cycled timing sub-list back to
  *   its single literal against a multi-entry transition-property, undoing the lossless
  *   expansion resolve/transition.ts makes for the emitted shorthand.
  *
- * Used size (width/height + logical) and insets (top/right/bottom/left + logical) are
+ * Used size (width and height plus logical) and insets (top, right, bottom, and left plus logical) are
  * deliberately NOT here. They are compared for every element and reclaimed through
- * shouldReclaim, which decides direction from the replaced/non-replaced CSS category.
+ * shouldReclaim, which decides direction from the replaced versus non-replaced CSS category.
  *
  * Custom properties are handled separately, since they never enumerate in computed style.
  * Everything else is compared. The standalone render is the authority, so any
@@ -131,7 +131,7 @@ const SKIP_PROPS = new Set<string>([
  * shouldReclaim. A non-replaced box only ever *loses* a sizing input standalone, so a
  * real defect is always a collapse and is reclaimed only when the box shrank. A
  * replaced box is intrinsic, so a divergence either way is a lost size. Insets are
- * deliberately excluded: they have no intrinsic direction, so they reclaim on any
+ * deliberately excluded because they have no intrinsic direction, so they reclaim on any
  * divergence, like paint.
  */
 const SIZE_PROPS = new Set<string>(['width', 'height', 'inline-size', 'block-size']);
@@ -163,7 +163,7 @@ const TOP_PROPS = 20;
  * - A color that merely follows `currentColor`, its target value equal to the element's own
  *   `color`, is never reclaimed as a concrete color. `color` is itself reclaimed when it
  *   diverges and carries the value down, and every `currentColor`-derived property
- *   (-webkit-text-fill-color, caret-color, text-emphasis-color, the border/outline colors,
+ *   (-webkit-text-fill-color, caret-color, text-emphasis-color, the border and outline colors,
  *   and their kin) tracks it per element in the standalone render just as it does live.
  *   Baking a concrete color here instead would freeze it onto this element and inherit down,
  *   overriding every descendant that sets only its own `color`, so a light-labelled button
@@ -176,7 +176,7 @@ const TOP_PROPS = 20;
  *   from being clipped back to the live width. A comparison that is not numerically
  *   decidable, such as a keyword used size like `auto`, cannot be shown to have collapsed, so
  *   it is left alone too, under that same restraint.
- * - A replaced element's used size is reclaimed in *either* direction: its box is
+ * - A replaced element's used size is reclaimed in *either* direction, its box is
  *   intrinsic, so free-sizing larger than its display cell is as wrong as collapsing.
  * - Everything else, insets, paint, and box, is reclaimed on any real divergence.
  *
@@ -244,7 +244,7 @@ export async function probeStandalone(captured: Captured): Promise<StandaloneRep
 	} catch (err) {
 		captured.warnings.push(`standalone probe: skipped (${(err as Error).message})`);
 	}
-	// Resource probe: detection only, isolated so a failure leaves the count at zero and
+	// Resource probe, detection only, isolated so a failure leaves the count at zero and
 	// never pushes a warning, keeping the emitted artifact byte-identical.
 	try {
 		report.unresolvedResources = await probeUnresolvedFonts(captured);
@@ -271,11 +271,11 @@ interface RenderedFace {
  * fetched, an inlining gap. Either way the artifact would render the wrong font, so it
  * is counted. Nothing is mutated and no emitted byte changes.
  *
- * Scope is the live FontFaceSet: only families the page actually loaded as a web font
+ * Scope is the live FontFaceSet. Only families the page actually loaded as a web font
  * are checked, so correctly-rendered system and generic text (Arial, system-ui) is
  * never counted, with no family list anywhere.
  *
- * Determinism note: while a captured face still carries an external src, the frame's
+ * Determinism note. While a captured face still carries an external src, the frame's
  * load() reaches the network, so the count is fully deterministic only once faces are
  * inlined as data uris in resolve/inline.ts. The discovery gap, zero faces for a rendered
  * family, reads the same offline or online.
@@ -351,7 +351,7 @@ function renderedWebFaces(root: Element, webFamilies: Set<string>): RenderedFace
 	return out;
 }
 
-/** Whether the frame's FontFaceSet resolves a face: false on an empty match or load failure. */
+/** Whether the frame's FontFaceSet resolves a face, false on an empty match or load failure. */
 async function faceResolves(win: Window, face: RenderedFace): Promise<boolean> {
 	try {
 		const request = `${face.weight} ${face.style} 16px "${face.family.replace(/"/g, '\\"')}"`;
@@ -375,14 +375,14 @@ function fontFaceRule(font: FontFace): string {
  * validates the intermediate inline clone, this validates the artifact that actually
  * ships, so it is the anchor the measurement loop gates on.
  *
- * delta B isolates the convert/emit cascade loss. clean.ts is verified lossless, so any
+ * delta B isolates the convert and emit cascade loss. clean.ts is verified lossless, so any
  * clone->emitted computed-style divergence is the BEM class cascade resolving differently
  * than the inline styles it replaced. delta A is the true shipped residual versus the live
  * element. absentProps counts the subset of delta A whose needed value never reached the
- * emitted CSS at all, an upstream capture/bake gap rather than a cascade defect. Both renders use
+ * emitted CSS at all, an upstream capture and bake gap rather than a cascade defect. Both renders use
  * the same drift-free iframe as probeStandalone, so the probe is deterministic.
  *
- * @param captured - the reconciled capture (root + clone, read-only here)
+ * @param captured - the reconciled capture (root and clone, read-only here)
  * @param emittedHtml - the emitted root markup, the emitBem output before doc assembly
  * @param emittedCss - the shipped stylesheet, after cleanCss
  */
@@ -399,7 +399,7 @@ export function probeEmitted(captured: Captured, emittedHtml: string, emittedCss
 	try {
 		// Render the inline clone and the emitted artifact in two separate frames, because
 		// the emitted stylesheet must not match the clone's author classes, so they cannot
-		// share a document. Both are the pasted-snip environment: ua stylesheet only.
+		// share a document. Both are the pasted-snip environment, ua stylesheet only.
 		cloneSized = createSizedFrame(captured);
 		const framedClone = cloneSized.doc.importNode(captured.clone, true) as Element;
 		cloneSized.doc.body.appendChild(framedClone);
@@ -414,7 +414,7 @@ export function probeEmitted(captured: Captured, emittedHtml: string, emittedCss
 		if (!emittedRoot) throw new Error('emitted markup has no root element');
 		emittedSized.doc.body.appendChild(emittedRoot);
 
-		// emitBem deep-copies the clone and only rewrites class/style attributes, never
+		// emitBem deep-copies the clone and only rewrites class and style attributes, never
 		// adding or dropping elements, so the emitted tree is structurally identical to the
 		// clone tree, and a lockstep zip pairs them. pairedSubtrees pairs the live original to
 		// the clone, skipping clone-only injected nodes the original lacks.
@@ -423,7 +423,7 @@ export function probeEmitted(captured: Captured, emittedHtml: string, emittedCss
 		const cloneToEmitted = new Map<Element, Element>();
 		zip(captured.clone, emittedRoot, cloneToEmitted);
 
-		// delta B: every paired element, emitted standalone vs inline-clone standalone.
+		// delta B, every paired element, emitted standalone vs inline-clone standalone.
 		for (const [clone, framed] of cloneToFramed) {
 			const emitted = cloneToEmitted.get(clone);
 			if (!emitted) continue;
@@ -443,7 +443,7 @@ export function probeEmitted(captured: Captured, emittedHtml: string, emittedCss
 			}
 		}
 
-		// delta A: every live original, live computed value vs emitted standalone. A value
+		// delta A, every live original, live computed value vs emitted standalone. A value
 		// the emitted CSS never carries is an absent-at-bake gap. One it carries but renders
 		// differently is a render-time gap. The delta-B attribution says which mechanism.
 		const cssHaystack = emittedCss.replace(/\s+/g, ' ').toLowerCase();
@@ -491,7 +491,7 @@ const NUMBER_TOKEN = /-?\d*\.?\d+(?:e[+-]?\d+)?/gi;
  * forms are compared. A benign length round-trip residual, such as a `px`->`rem`->`px`
  * line-height of 21.0012px vs 21.0013px or a 9999px radius vs 9999.01px, is not counted
  * as a loss, while a real divergence still differs, such as a dropped declaration falling
- * back to 0/normal/currentColor, or a different color. The threshold is well below one
+ * back to 0, normal, or currentColor, or a different color. The threshold is well below one
  * device pixel, so nothing visible is masked.
  *
  * @param a - one computed value
@@ -508,7 +508,7 @@ function roundToTenth(token: string): string {
 	return Number.isFinite(n) ? String(Math.round(n * 10) / 10) : token;
 }
 
-/** A bake the closing reconciliation will apply: a clone element gets `prop: value`. */
+/** A bake the closing reconciliation will apply, a clone element gets `prop: value`. */
 interface Override {
 	clone: Element;
 	framed: Element;
@@ -527,16 +527,16 @@ const MAX_ROUNDS = 4;
  * diverges from the original's live computed value, as shouldReclaim judges it, is
  * corrected by baking the original's resolved value, overriding an authored value that
  * does not reproduce standalone, such as a dangling token, a lost inherited font, an
- * ancestor-relative length, or a flex/grid track or inset that did not travel with the
+ * ancestor-relative length, or a flex or grid track or inset that did not travel with the
  * snip. This is the single anchor that fixes missing backgrounds, dangling variables,
  * lost display, and collapsed box geometry at once.
  *
- * It runs to a fixed point: baking a structural property such as `display` can change
+ * It runs to a fixed point. Baking a structural property such as `display` can change
  * descendants' computed values, so each round re-reads the standalone render, with the
  * bakes applied to the in-frame copy too so the next round sees them, and stops
  * when a round makes no further corrections.
  *
- * @param captured - bakedStyles + clone are mutated in place
+ * @param captured - bakedStyles and clone are mutated in place
  */
 export function reconcileStandalone(captured: Captured): void {
 	try {
@@ -620,9 +620,9 @@ function zeroRootMargin(captured: Captured): void {
  * separate, later decision to restore the vanished backdrop, so it is not reverted.
  * Only the root needs it, because children paint over it. The recovered paint is a solid color,
  * or any reproducible backdrop image, such as a gradient, a tiled pattern, or a
- * cover/contain image. A positioned framed photo, sized for the full section, is still only flagged.
+ * cover or contain image. A positioned framed photo, sized for the full section, is still only flagged.
  *
- * @param captured - the root clone's baked map + inline style are extended
+ * @param captured - the root clone's baked map and inline style are extended
  */
 function recoverEscapedBackground(captured: Captured): void {
 	const rootCs = getComputedStyle(captured.root);
@@ -638,7 +638,7 @@ function recoverEscapedBackground(captured: Captured): void {
 			return;
 		}
 		// A nearer ancestor paints its backdrop with an image rather than a solid color.
-		// A reproducible backdrop, such as a gradient, a repeated tile, or a cover/contain image, is a
+		// A reproducible backdrop, such as a gradient, a repeated tile, or a cover or contain image, is a
 		// paint that re-renders at any size, so baking the whole multi-layer value plus its
 		// placement onto the root reproduces the backdrop and makes light-on-backdrop text
 		// visible, even though it was authored for the whole section. A positioned framed
@@ -659,7 +659,7 @@ function recoverEscapedBackground(captured: Captured): void {
 	}
 }
 
-/** Bakes one recovered value onto the snip root: bakedStyles plus inline style. */
+/** Bakes one recovered value onto the snip root, bakedStyles plus inline style. */
 function bakeOnRoot(captured: Captured, prop: string, value: string): void {
 	const rootClone = captured.clone as HTMLElement;
 	const baked = captured.bakedStyles.get(rootClone) ?? new Map<string, string>();
@@ -681,7 +681,7 @@ function isTransparentColor(color: string): boolean {
  * Whether a computed backdrop reproduces faithfully when baked onto the snip's own,
  * smaller box. A value with no raster layer is judged on its gradients, since a paint
  * function reproduces at any size. A raster layer reproduces in three cases. It tiles,
- * where a repeat fills any box. It scales, where a cover/contain image fits any box. Or
+ * where a repeat fills any box. It scales, where a cover or contain image fits any box. Or
  * it paints the whole ancestor box, a full-bleed backdrop which can be rescaled to cover
  * the snip. A smaller placed raster is a framed image positioned for its section and does
  * not reproduce.
@@ -696,7 +696,7 @@ function isReproducibleBackdrop(node: Element, cs: CSSStyleDeclaration): boolean
 
 /**
  * The size and repeat to bake when reproducing a backdrop on the snip. A tiled or
- * scaling backdrop keeps its own placement: a tile repeats, and a cover/contain image fits.
+ * scaling backdrop keeps its own placement, a tile repeats, and a cover or contain image fits.
  * A full-bleed raster sized in fixed pixels for the original section is rescaled to
  * cover, so it fills the smaller snip box rather than overflowing it.
  *
@@ -738,7 +738,7 @@ function isFullBleed(node: Element, backgroundSize: string): boolean {
 }
 
 /**
- * Whether a computed background-image is purely css gradients: linear/radial/conic,
+ * Whether a computed background-image is purely css gradients, linear, radial, or conic,
  * including repeating and -webkit- forms. A gradient is a paint function, not positioned
  * pixels, so baking it onto a smaller box still renders a faithful backdrop.
  *
@@ -774,7 +774,7 @@ function applyOverride(captured: Captured, o: Override): void {
 }
 
 /**
- * The longhand properties worth comparing on an element: every enumerable computed
+ * The longhand properties worth comparing on an element, every enumerable computed
  * longhand except custom properties, which do not enumerate, and the explicit skip
  * set. The standalone render is the authority, so this list is deliberately broad,
  * never a hand-picked "important props" set. Used size and insets are included for
@@ -817,7 +817,7 @@ function withStandaloneFrame(captured: Captured, fn: (map: Map<Element, Element>
 	}
 }
 
-/** A hidden iframe and its document/window, sized to the capture viewport. */
+/** A hidden iframe and its document and window, sized to the capture viewport. */
 export interface SizedFrame {
 	frame: HTMLIFrameElement;
 	doc: Document;
@@ -848,7 +848,7 @@ export function createSizedFrame(captured: Captured, standards = false): SizedFr
 	const vh = captured.page.viewport.height || 800;
 	const frame = document.createElement('iframe');
 	frame.setAttribute('aria-hidden', 'true');
-	// Off-screen but sized to the capture viewport so vw/vh/% resolve as they would
+	// Off-screen but sized to the capture viewport so vw, vh, and % resolve as they would
 	// in the pasted snip. visibility:hidden keeps it from painting.
 	frame.style.cssText = `position:absolute;left:-99999px;top:0;width:${vw}px;height:${vh}px;border:0;visibility:hidden`;
 	document.body.appendChild(frame);

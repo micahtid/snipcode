@@ -1,16 +1,15 @@
 /**
- * polish/restore.ts: orphan prune after the polish edits.
+ * Orphan prune after the polish edits.
  *
- * Pipeline position: polish.
- * This does not read from Captured. It operates on html and css strings.
- * It does not write to Captured.
+ * This runs in the polish phase. It does not read from Captured. It operates on html and css
+ * strings. It does not write to Captured.
  *
  * The orphan prune is dead-code elimination, not aesthetic surgery.
  *
- * Why this exists: after the polish edits are applied, a class rename could leave a css rule
- * whose every class token no longer appears in the markup. This drops exactly those rules
- * and never touches one the markup still references. Interactive and generated-content rules
- * are re-emitted deterministically upstream, so polish no longer adds any css of its own.
+ * After the polish edits are applied, a class rename could leave a css rule whose every class
+ * token no longer appears in the markup. This drops exactly those rules and never touches one
+ * the markup still references. Interactive and generated-content rules are re-emitted
+ * deterministically upstream, so polish no longer adds any css of its own.
  */
 
 /**

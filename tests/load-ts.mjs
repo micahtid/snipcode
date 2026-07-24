@@ -1,4 +1,4 @@
-// Load-ts: bundle one typescript module out of src/ and import it into the node test
+// Bundle one typescript module out of src/ and import it into the node test
 // process. The extension ships as a vite bundle and has no test-time module loader of its
 // own, so the unit suite compiles the module under test on the fly with esbuild, which is
 // already present as a vite dependency, and imports the result from a data url. No new
@@ -29,9 +29,6 @@ export async function load(relPath) {
 		target: 'es2022',
 		write: false,
 		logLevel: 'silent',
-		// The bundles reference __BUILD_ID__, a vite-injected constant absent under the test
-		// bundler; a stable literal stands in so the reset-on-new-build path is inert in tests.
-		define: { __BUILD_ID__: JSON.stringify('test') },
 	});
 	const code = built.outputFiles[0].text;
 	return await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
@@ -49,7 +46,12 @@ export function stubChromeStorage(seed = {}) {
 	globalThis.chrome = {
 		storage: {
 			local: {
-				get: async (key) => (key in store ? { [key]: store[key] } : {}),
+				get: async (keys) => {
+				const names = keys == null ? Object.keys(store) : Array.isArray(keys) ? keys : typeof keys === 'object' ? Object.keys(keys) : [keys];
+				const out = {};
+				for (const k of names) if (k in store) out[k] = store[k];
+				return out;
+			},
 				set: async (patch) => {
 					Object.assign(store, patch);
 				},

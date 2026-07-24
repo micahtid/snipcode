@@ -1,9 +1,9 @@
-// Grader: render each bundle's output.html in headless chromium at the matching
-// original.jpg dimensions, then score the rendered png against the screenshot
+// Grader that renders each bundle's output.html in headless chromium at the matching
+// original.jpg dimensions, then scores the rendered png against the screenshot
 // with pixelmatch (raw pixel diff) and ssim (structural similarity).
 //
-// v2 filenames: original.jpg (ground truth, from snapshot-bundles.mjs) and
-// output.html (pipeline output, from run-pipeline.mjs). Was 0-screenshot.jpg /
+// The v2 filenames are original.jpg (ground truth, from snapshot-bundles.mjs) and
+// output.html (pipeline output, from run-pipeline.mjs). Was 0-screenshot.jpg and
 // 4-final-ai.html in v1.
 
 import { chromium } from 'playwright';
@@ -137,7 +137,7 @@ async function gradeBundle(browser, bundle) {
 	const refInk = inkCoverage(srcRaw, width, height);
 
 	// Fold in the completeness-probe sidecar the pipeline runner wrote (drift-free
-	// counts of properties/elements the standalone clone fails to reproduce), when present.
+	// counts of properties and elements the standalone clone fails to reproduce), when present.
 	const probe = await readProbe(bundle.dir);
 
 	return { tier: bundle.tier, name: bundle.name, targetFile: bundle.targetFile, width, height, pixelScore, ssimScore, ink, refInk, ...probe, diffPixels, totalPixels };

@@ -1,26 +1,23 @@
 /**
- * features/effects.ts: filters, masks, clip-path, blend, shadow
+ * Filters, masks, clip-path, blend, and shadow.
  *
- * Pipeline position: reconcile
- * Reads from Captured: root, clone, bakedStyles
- * Writes to Captured: bakedStyles + clone, baking non-default effect properties
+ * This is a reconcile-phase feature handler. It reads root, clone, and bakedStyles
+ * from Captured and writes bakedStyles and clone, baking non-default effect properties.
+ * It extends the "ship what renders" rule to the visual-effect properties the authored
+ * cascade often omits.
  *
- * Principles applied: this extends the "ship what renders" rule to the
- * visual-effect properties the authored cascade often omits.
- *
- * CSS/spec reference: https://developer.mozilla.org/en-US/docs/Web/CSS/filter
- * also covers backdrop-filter, clip-path, mask, mix-blend-mode, box-shadow.
- * Detection criterion: an element with a non-default value for one of the effect
- * properties. Otherwise it early-returns per element.
- * Transform contract: it bakes those computed values onto the matching clone
- * element, absolutizing any url(), for example in mask-image or clip-path:
+ * The relevant spec is https://developer.mozilla.org/en-US/docs/Web/CSS/filter, which
+ * also covers backdrop-filter, clip-path, mask, mix-blend-mode, and box-shadow. It
+ * detects an element with a non-default value for one of the effect properties, and
+ * otherwise early-returns per element. It bakes those computed values onto the matching
+ * clone element, absolutizing any url(), for example in mask-image or clip-path:
  * url(#...). It mutates bakedStyles and the clone inline styles only.
  *
- * Why this exists: filter, backdrop-filter, clip-path, mask, mix-blend-mode, and
- * multi-layer or inset box-shadow are central to a component's look, but they are
- * frequently applied through a class that does not survive. So without baking, the
- * snip loses its blur, glass, or clipped shape. These properties are per-frame
- * stable, so baking the computed value is pixel-safe.
+ * filter, backdrop-filter, clip-path, mask, mix-blend-mode, and multi-layer or inset
+ * box-shadow are central to a component's look, but they are frequently applied through
+ * a class that does not survive. So without baking, the snip loses its blur, glass, or
+ * clipped shape. These properties are per-frame stable, so baking the computed value is
+ * pixel-safe.
  */
 import type { Captured } from '../../types';
 import { pairedSubtrees } from '../match';
@@ -49,7 +46,7 @@ function isDefault(value: string): boolean {
 /**
  * Bakes non-default visual-effect properties onto each element.
  *
- * @param captured - bakedStyles + clone are mutated in place
+ * @param captured - bakedStyles and clone are mutated in place
  */
 export function apply(captured: Captured): Captured {
 	const base = document.baseURI || location.href;

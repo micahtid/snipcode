@@ -1,4 +1,4 @@
-// Panel end-to-end tests: the side panel rendering a snip result and a history list.
+// Panel end-to-end tests of the side panel rendering a snip result and a history list.
 //
 // This drives the real built side panel, dist/index.html, in a headless chromium with the
 // extension loaded, so react, the storage layer, and the rendering all run as they ship.
@@ -111,7 +111,7 @@ test('a single snip shows one file row and no component pills', async () => {
 		],
 	});
 
-	// Every file is a tab of the same kind: a stylesheet is not more of a file than an icon.
+	// Every file is a tab of the same kind. A stylesheet is not more of a file than an icon.
 	assert.deepEqual(await page.locator('[role="tab"]').allTextContents(), ['index.html', 'styles.css', 'icon-1.svg']);
 	assert.equal(await page.locator('[aria-label="Components"]').count(), 0);
 	await page.click('text=styles.css');
@@ -152,7 +152,7 @@ test('a batch renders component pills over each component file row', async () =>
 		],
 	});
 
-	// Two tiers: the component tabs, then the active component's own files.
+	// Two tiers, the component tabs, then the active component's own files.
 	const labels = await page.locator('[role="tab"]').allTextContents();
 	assert.deepEqual(labels, ['component-1', 'component-2', 'index.html', 'icon-1.svg']);
 	assert.match(await page.textContent('pre code'), /<p>a<\/p>/);

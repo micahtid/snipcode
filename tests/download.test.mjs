@@ -1,4 +1,4 @@
-// Download unit tests: the shared zip builder in utils/download.ts.
+// Download unit tests for the shared zip builder in utils/download.ts.
 //
 // buildZip is the one place a multi-file download is assembled, for both the history
 // export and a multi-select snip, so these check folder paths, text and binary payloads,
@@ -33,7 +33,7 @@ test('buildZip writes text entries at their given paths', async () => {
 });
 
 test('buildZip keeps same-named files apart when they sit in different folders', async () => {
-	// This is the whole point of the folder prefix: every component ships an index.html.
+	// This is the whole point of the folder prefix. Every component ships an index.html.
 	const blob = await mod.buildZip([
 		{ path: 'component-1/index.html', text: 'a' },
 		{ path: 'component-1/icon-1.svg', text: '<svg/>' },

@@ -1,9 +1,8 @@
 /**
- * reconcile/denoise.ts: inert-declaration removal
+ * Inert-declaration removal.
  *
- * Pipeline position: reconcile
- * Reads from Captured: root, clone, bakedStyles
- * Writes to Captured: bakedStyles and clone, removing redundant inline styles, plus warnings
+ * This runs in the reconcile phase. It reads root, clone, and bakedStyles from Captured
+ * and writes bakedStyles and clone, removing redundant inline styles, plus warnings.
  *
  * Removal is render-identical by construction, never aesthetic surgery.
  *
@@ -19,7 +18,7 @@
  * smaller result and the polish llm sees clean markup.
  *
  * Two further drops ride the same ground-truth machinery. A css-wide keyword
- * (initial/inherit/unset) reaches the output verbatim because bake.ts prefers the
+ * (initial, inherit, or unset) reaches the output verbatim because bake.ts prefers the
  * authored value when it round-trips. resolveCssWideKeyword resolves it to the value
  * it actually produces, so isRedundantDecl can match it against the fallback and drop
  * it when inert. A legacy vendor-prefixed flexbox longhand such as -webkit-box-align
@@ -38,7 +37,7 @@ import { pairedSubtrees, isRedundantDecl, transformContext, inheritsProperty } f
  * De-noises every baked element by dropping declarations that render identically
  * when removed.
  *
- * @param captured - bakedStyles + clone are mutated in place
+ * @param captured - bakedStyles and clone are mutated in place
  */
 export function denoise(captured: Captured): void {
 	try {
@@ -104,7 +103,7 @@ function dropDecl(baked: Map<string, string>, clone: Element, prop: string): voi
 }
 
 /**
- * Resolves a css-wide keyword (initial/inherit/unset) to the concrete value it
+ * Resolves a css-wide keyword (initial, inherit, or unset) to the concrete value it
  * produces, so the redundancy test can compare it against the value the element falls
  * back to. bake.ts ships these keywords verbatim when they round-trip the computed
  * value, and isRedundantDecl is an exact-string test, so `initial` never matches a
@@ -121,7 +120,7 @@ function dropDecl(baked: Map<string, string>, clone: Element, prop: string): voi
  * to the initial and wrongly dropped. `unset` resolves to the inherited value for an
  * inherited property, else the spec initial. That matches the spec definition, where it
  * is identical to `initial` and never the parent's value, so it is always safe to
- * resolve. `revert` is left untouched. It reverts to the ua/author origin, which the
+ * resolve. `revert` is left untouched. It reverts to the ua or author origin, which the
  * standalone snip does not carry, so it is never provably inert.
  *
  * @param captured - source of the per-clone baked maps, for inherited resolution
@@ -152,16 +151,16 @@ export function resolveCssWideKeyword(captured: Captured, clone: Element, prop: 
  * because there it could still be load-bearing.
  *
  * The display guard is load-bearing, not belt-and-suspenders. Under `display:
- * -webkit-box`/`-webkit-inline-box` the old box model is live, so `-webkit-box-orient:
+ * -webkit-box` or `-webkit-inline-box` the old box model is live, so `-webkit-box-orient:
  * vertical`, the `-webkit-line-clamp` multi-line-ellipsis idiom, and its siblings still
  * drive layout even with a standard property present. It is checked against the BAKED
  * display, not the live computed display. The output renders with the baked value, so
  * that is the value that decides whether the prefixed prop is load-bearing, and live
  * getComputedStyle is unreliable here anyway, since a -webkit-box element with line-clamp
  * reports `flow-root`. The old box props are honored on the element itself
- * (orient/direction/align/pack) or on a child of an old box (flex/ordinal-group), so the
+ * (orient, direction, align, or pack) or on a child of an old box (flex or ordinal-group), so the
  * guard checks the element's own baked display and its parent's. The
- * `-webkit-flex-*`/`-webkit-align-*` aliases need no guard. Modern engines treat them as
+ * `-webkit-flex-*` and `-webkit-align-*` aliases need no guard. Modern engines treat them as
  * plain aliases of the standard names, so the standard sibling wins regardless.
  *
  * @param captured - source of the per-clone baked maps, for the parent display check
@@ -270,7 +269,7 @@ function probeKey(el: Element): string {
  * grey color or ::marker's disc. It is the baseline a non-inherited pseudo declaration
  * falls back to. Like elementDefaultProbe it strips the page's author rules, which do
  * not travel with the snip, so the pseudo handler can de-noise against the same ground
- * truth the element pass uses. Cached per attribute signature + pseudo for the snip.
+ * truth the element pass uses. Cached per attribute signature and pseudo for the snip.
  *
  * @param el - the originating element
  * @param pseudo - the pseudo-element selector, e.g. '::placeholder'
@@ -316,7 +315,7 @@ function initialStyles(): Map<string, string> {
  * Runs `fn` against a fresh, hidden, same-origin iframe, where about:blank carries only the
  * ua stylesheet, isolated from the page's author rules, tearing it down afterward.
  *
- * @param fn - reads probe styles from the iframe document/window while it is attached
+ * @param fn - reads probe styles from the iframe document and window while it is attached
  */
 function withProbeFrame(fn: (doc: Document, win: Window) => void): void {
 	const frame = document.createElement('iframe');
@@ -349,8 +348,8 @@ const PSEUDO_DEFAULT_CACHE = new Map<string, Map<string, string>>();
 /**
  * How a prefixed flexbox property is honored, which decides its display guard.
  * `box-self` is a 2009 box property honored on its own `-webkit-box` element
- * (orient/direction/align/pack). `box-item` is one honored on a child of a `-webkit-box`
- * (flex/ordinal-group). `alias` is a 2011 `-webkit-flex-*`/`-webkit-align-*` name that
+ * (orient, direction, align, or pack). `box-item` is one honored on a child of a `-webkit-box`
+ * (flex or ordinal-group). `alias` is a 2011 `-webkit-flex-*` and `-webkit-align-*` name that
  * modern engines treat as a plain alias of the standard property, needing no guard.
  */
 type PrefixScope = 'box-self' | 'box-item' | 'alias';

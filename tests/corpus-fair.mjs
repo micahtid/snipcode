@@ -10,7 +10,7 @@
 // Any remaining gap is real pipeline behavior, not drift. Nothing on disk is touched.
 // This is a measurement, not a re-capture.
 //
-// Requires `npm run build`. Run: `node tests/corpus-fair.mjs [--only <substr>]`.
+// Requires `npm run build`. Run `node tests/corpus-fair.mjs [--only <substr>]`.
 
 import { chromium } from 'playwright';
 import sharp from 'sharp';

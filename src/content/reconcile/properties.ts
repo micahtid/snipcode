@@ -1,9 +1,9 @@
 /**
- * reconcile/properties.ts: registered custom properties (@property)
+ * Registered custom properties (@property).
  *
- * Pipeline position: reconcile, a leaf utility read live from the cssom
- * Reads from Captured: nothing, it reads document.styleSheets directly
- * Writes to Captured: nothing, it is a pure read
+ * This runs in the reconcile phase as a leaf utility read live from the cssom. It reads
+ * nothing from Captured, reading document.styleSheets directly, and writes nothing, being
+ * a pure read.
  *
  * It exists because a custom property registered with `@property` carries a syntax, an
  * inherits flag, and often an initial-value that govern how it falls back and
@@ -17,7 +17,7 @@
  * structurally by its descriptor fields, exactly as before.
  */
 
-/** One registered @property: its name, its initial-value or null when none, and its source text. */
+/** One registered @property, its name, its initial-value or null when none, and its source text. */
 export interface RegisteredProperty {
 	/** The custom-property name, including the leading `--`. */
 	name: string;
@@ -29,7 +29,7 @@ export interface RegisteredProperty {
 
 /**
  * The custom properties registered via `@property` anywhere in the document, keyed by
- * name. Cross-origin sheets that cannot be read are skipped: their registrations are
+ * name. Cross-origin sheets that cannot be read are skipped, their registrations are
  * unreadable from the content script, the same boundary every cssom read accepts.
  *
  * @returns a name -> registration map

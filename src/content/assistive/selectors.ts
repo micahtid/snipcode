@@ -1,17 +1,12 @@
 /**
- * assistive/selectors.ts: assistive element descriptor.
+ * Assistive element descriptor.
  *
- * Pipeline position: capture.
- * Reads from Captured: element.
- * It does not write to Captured. It returns the element descriptor.
- *
- * No principles apply here.
- *
- * Why this exists: the assistive json's `element` block needs both a shortest-unique
- * `selector` and a churn-resistant `robustSelector`. Those are computed once during capture
- * by capture/dom.ts buildElementMetadata and stored on Captured.element. This module is the
- * assistive-side accessor for that block, so emit.ts depends on the assistive layer rather
- * than reaching into capture. It also guards that both selectors are populated.
+ * This runs in the capture phase and reads element from Captured, returning the element
+ * descriptor without writing back. The assistive json's `element` block needs both a
+ * shortest-unique `selector` and a churn-resistant `robustSelector`. Those are computed once
+ * during capture by capture/dom.ts buildElementMetadata and stored on Captured.element. This
+ * module is the assistive-side accessor for that block, so emit.ts depends on the assistive
+ * layer rather than reaching into capture. It also guards that both selectors are populated.
  */
 import type { Captured } from '../types';
 

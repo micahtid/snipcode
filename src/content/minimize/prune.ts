@@ -1,11 +1,11 @@
 /**
- * minimize/prune.ts: declaration-level dead-code minimization
+ * Declaration-level dead-code minimization.
  *
- * Pipeline position: minimize, the first phase, right after convert/clean
- * Reads from Captured: page.viewport via the oracle, plus warnings on graceful skip
- * Writes to Captured: nothing. It transforms the emitted stylesheet string.
+ * This runs in the minimize phase, the first phase, right after convert/clean. It reads
+ * page.viewport from Captured through the oracle and appends warnings on a graceful skip,
+ * writing nothing and transforming the emitted stylesheet string.
  *
- * Why this exists: the reproduced stylesheet bakes a full computed style onto every
+ * The reproduced stylesheet bakes a full computed style onto every
  * element, so it restates inherited values, repeats ua defaults, and carries no-op
  * declarations by the hundred. This deletes every declaration whose removal leaves the
  * render byte-identical, judged by the computed-style oracle, and drops any rule left
@@ -15,7 +15,7 @@
  * The method is universal and verification-first, never example-specific. Declarations
  * are indexed through the browser's own css parser in the oracle frame, never by regex
  * over text, so data-uri braces and nested functions cannot mislead it. Deletion is
- * delta-debugging: a chunk is removed, the oracle checks the render, and the removal is
+ * delta-debugging. A chunk is removed, the oracle checks the render, and the removal is
  * accepted only when the render is unchanged, otherwise the chunk is restored and split.
  * Because every accepted deletion is individually render-verified, the result cannot depend on
  * which site produced the css. There is no property table and no per-site rule anywhere,
@@ -36,7 +36,7 @@ import { parseSegments, inScopeRule, serializeRules, type Segment } from './decl
  * Properties held out of deletion because the resting subtree oracle cannot verify them.
  * Animation and transition carry motion, not resting style. The oracle freezes them, so
  * they look inert at rest and deleting one would silently strip the reveal, hover, and
- * transition motion earlier phases reproduce. Counter properties act across the tree: a
+ * transition motion earlier phases reproduce. Counter properties act across the tree. A
  * counter-increment on one element changes the counter a later sibling's generated content
  * renders, an effect outside the element's own subtree that the subtree-scoped check cannot
  * see. Holding both out by property name is universal.
@@ -141,7 +141,7 @@ interface MinRule {
 	kept: boolean[];
 }
 
-/** A candidate declaration: which minimizable rule and which segment within it. */
+/** A candidate declaration, which minimizable rule and which segment within it. */
 interface DeclRef {
 	rIdx: number;
 	segIdx: number;
@@ -149,7 +149,7 @@ interface DeclRef {
 
 /**
  * Runs the minimization against a mounted oracle and returns the serialized result. The
- * oracle frame's own stylesheet is the working copy: declarations are removed from it,
+ * oracle frame's own stylesheet is the working copy. Declarations are removed from it,
  * checked, and kept or restored, then the surviving rules are serialized back to text.
  *
  * @param oracle - the mounted render whose stylesheet is minimized in place
@@ -228,7 +228,7 @@ function run(oracle: RenderOracle, stats?: MinimizeStats): string {
 	const deadline = now() + BUDGET_MS;
 	const all = index.map((_, i) => i);
 
-	// Delta-debugging bisection: remove a chunk, and if the affected subtree still matches
+	// Delta-debugging bisection. Remove a chunk, and if the affected subtree still matches
 	// the reference keep it removed, otherwise restore it and split. Every accepted removal
 	// leaves the frame equal to the reference, so every later check compares against the same
 	// baseline.
@@ -243,7 +243,7 @@ function run(oracle: RenderOracle, stats?: MinimizeStats): string {
 		bisect(idxs.slice(mid));
 	};
 
-	// Pre-pass: batch the declarations most likely to be dead, the ones that merely restate
+	// Pre-pass. Batch the declarations most likely to be dead, the ones that merely restate
 	// an inherited value or a ua default, and try removing them all in one check. A pass
 	// clears the whole batch at once, the big win on large components. A fail salvages the
 	// batch by bisecting only it, still cheap because it is nearly all removable, so the
@@ -262,7 +262,7 @@ function run(oracle: RenderOracle, stats?: MinimizeStats): string {
 	}
 	bisect(rest);
 
-	// Soundness fallback: with reliable rebuild the frame equals the reference here, but if
+	// Soundness fallback. With reliable rebuild the frame equals the reference here, but if
 	// some pathological cascade left it diverging, restore everything and ship the input
 	// unchanged rather than a wrong render.
 	if (!oracle.matchesReference()) {

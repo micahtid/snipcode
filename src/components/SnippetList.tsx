@@ -1,21 +1,15 @@
 /**
- * components/SnippetList.tsx: the history view that lists stored snippets
+ * The history view that lists stored snippets.
  *
- * Pipeline position: n/a. Reads stored SnippetRecord[].
- * Reads from Captured: n/a
- * Writes to Captured: n/a
- *
- * Principles applied: none. Ui only.
- *
- * Why this exists: snipcode keeps the last 50 unsaved snippets in chrome.storage.local
- * in fifo order, plus every snippet the user saved, which is exempt from that cap. This
- * view renders both from the one stored list, split into a Saved section above a History
- * section, each with a live count. Every card carries a bookmark toggle, so a snippet can
- * be saved or unsaved from here as well as from the result panel, and unsaving drops it
- * back into History where it ages out normally. Clicking a card downloads that one
- * snippet's component, its code file plus a stylesheet when the format keeps css apart.
- * "Export all" zips every snippet, saved and unsaved, into a folder each, built in the
- * sidebar with jszip. "Clear History" drops the unsaved snippets only.
+ * Snipcode keeps the last 50 unsaved snippets in chrome.storage.local in fifo order, plus
+ * every snippet the user saved, which is exempt from that cap. This view renders both from
+ * the one stored list, split into a Saved section above a History section, each with a live
+ * count. Every card carries a bookmark toggle, so a snippet can be saved or unsaved from here
+ * as well as from the result panel, and unsaving drops it back into History where it ages out
+ * normally. Clicking a card downloads that one snippet's component, its code file plus a
+ * stylesheet when the format keeps css apart. "Export all" zips every snippet, saved and
+ * unsaved, into a folder each, built in the sidebar with jszip. "Clear History" drops the
+ * unsaved snippets only.
  */
 import { useEffect, useState } from 'react';
 import { Bookmark, LibraryBig } from 'lucide-react';
@@ -122,7 +116,7 @@ export function SnippetList() {
 
 	return (
 		<ViewLayout footer={footer}>
-			{/* An empty Saved section renders nothing at all; the empty state above already
+			{/* An empty Saved section renders nothing at all. The empty state above already
 			    covers the case where both sections are empty. */}
 			{saved.length > 0 && (
 				<>
@@ -147,7 +141,7 @@ async function refresh(): Promise<SnippetRecord[]> {
 }
 
 /**
- * Download one snippet's component: its code file, plus a separate stylesheet when the
+ * Download one snippet's component, its code file, plus a separate stylesheet when the
  * format keeps css apart. Mirrors the per-snippet files exportZip writes into each folder.
  */
 function downloadSnippet(snip: SnippetRecord): void {

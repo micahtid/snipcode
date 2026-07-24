@@ -1,19 +1,15 @@
 /**
- * inspect/fonts.ts: page-wide font extractor
+ * Page-wide font extractor.
  *
- * Pipeline position: inspect, page-scoped. It reads the live dom directly and does not run the element pipeline.
- * Reads from DOM: document/window. This runs live, so the page must be loaded.
- * Writes to: nothing. This is pure extraction with no side effects.
- *
- * Principles applied: none. This is extraction.
- *
- * Why this exists: the fonts inspector lists every font family the page renders,
- * most-used first, so the panel can show an "Aa" preview, the web/system origin,
- * and the variant count. Web versus system is decided by the FontFaceSet
- * (`document.fonts`), which mirrors every @font-face the page declares. Usage and
- * variants come from a single walk of the rendered text. Ported by rewriting from
- * v1 fonts/font-extractor.ts, dropping the class/logger ceremony and the
- * @font-face url + load-state fields the panel never showed.
+ * This is a page-scan inspector that reads the live dom directly and does not run the element
+ * pipeline. It runs live, so the page must be loaded, reads document and window, and writes
+ * nothing, a pure extraction with no side effects. The fonts inspector lists every font family
+ * the page renders, most-used first, so the panel can show an "Aa" preview, the web and system
+ * origin, and the variant count. Web versus system is decided by the FontFaceSet
+ * (`document.fonts`), which mirrors every @font-face the page declares. Usage and variants come
+ * from a single walk of the rendered text. This was ported and rewritten from v1
+ * fonts/font-extractor.ts, dropping the class and logger ceremony and the @font-face url and
+ * load-state fields the panel never showed.
  */
 import type { FontReport, FontVariant } from './types';
 
@@ -30,7 +26,7 @@ const GENERIC_FAMILIES = new Set([
 /** A safety cap so a pathologically large page cannot stall the walk. */
 const MAX_ELEMENTS = 2000;
 
-/** Working tally for one family: its usage count and the distinct variants seen. */
+/** Working tally for one family, its usage count and the distinct variants seen. */
 interface FamilyUsage {
 	count: number;
 	variants: Map<string, FontVariant>;
@@ -74,7 +70,7 @@ function declaredWebFamilies(): Set<string> {
 
 /**
  * Walks the rendered text and tallies, per family, how many elements use it and
- * which weight/style variants appear. Only the first listed family of each
+ * which weight and style variants appear. Only the first listed family of each
  * element is counted, since that is the one that actually renders.
  */
 function walkRenderedFonts(): Map<string, FamilyUsage> {

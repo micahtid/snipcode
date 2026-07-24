@@ -1,19 +1,13 @@
 /**
- * components/CloudBackdrop.tsx: decorative cloud-sky backdrop
+ * Decorative cloud-sky backdrop.
  *
- * Pipeline position: n/a. Ui chrome, not a pipeline phase.
- * Reads from Captured: n/a
- * Writes to Captured: n/a
- *
- * Principles applied: none. Ui only.
- *
- * Why this exists: v1's signature look is a soft procedural cloud sky behind the
- * frosted-glass panel. This reproduces it because the user asked for the same background
- * design. Clouds are generated deterministically from fixed shape/anchor data so
- * the layout is stable across renders, with no Math.random flicker, and identical to
- * v1's. The geometry classes (.cloud-*) live in global-css.ts; per-cloud and
- * per-piece position/blur/opacity are inline because they are data, not style.
- * Static by design: v1's backdrop does not animate, so neither does this.
+ * V1's signature look is a soft procedural cloud sky behind the frosted-glass panel.
+ * This reproduces it because the user asked for the same background design. Clouds are
+ * generated deterministically from fixed shape and anchor data so the layout is stable
+ * across renders, with no Math.random flicker, and identical to v1's. The geometry
+ * classes (.cloud-*) live in global-css.ts, while per-cloud and per-piece position, blur,
+ * and opacity are inline because they are data, not style. It is static by design, since
+ * v1's backdrop does not animate.
  */
 
 /** One soft white blob within a cloud cluster, in fractions of the cluster box. */
@@ -48,7 +42,7 @@ const clamp = (v: number, min: number, max: number): number => Math.min(max, Mat
  * of the codebase avoids `!`.
  *
  * @param list - a non-empty constant template list
- * @param i - any index; wrapped into range
+ * @param i - any index, wrapped into range
  */
 function at<T>(list: readonly T[], i: number): T {
 	const item = list[((i % list.length) + list.length) % list.length];
@@ -56,7 +50,7 @@ function at<T>(list: readonly T[], i: number): T {
 	return item;
 }
 
-/** Base blob templates: the body of a cloud. One is chosen per cluster. */
+/** Base blob templates, the body of a cloud. One is chosen per cluster. */
 const SHAPES: Array<Array<Omit<CloudPiece, 'gradient' | 'rotation'>>> = [
 	[
 		{ x: 0.08, y: 0.52, w: 0.46, h: 0.4, alpha: 0.84 },
@@ -118,8 +112,8 @@ const GRADIENTS = [
 ];
 
 /**
- * The eight cloud anchors: horizontal position, size, and depth/blur/opacity that
- * place each cluster along a gentle horizon curve, with back clouds higher and blurrier.
+ * The eight cloud anchors, giving horizontal position, size, and depth, blur, and opacity
+ * that place each cluster along a gentle horizon curve, with back clouds higher and blurrier.
  */
 const ANCHORS = [
 	{ x: -12, size: 120, lift: 16, template: 2, puff: 1, variant: 2, opacity: 0.16, blur: 34, ratio: 0.28, base: 6, depth: 34, baseW: 1.2, baseH: 1.35, baseShift: 0.08 },
@@ -196,7 +190,7 @@ function buildCloud(anchor: (typeof ANCHORS)[number], id: number): Cloud {
 	return { id, left: anchor.x, top, width: anchor.size, ratio: anchor.ratio, opacity: anchor.opacity, blur: anchor.blur, pieces };
 }
 
-/** Generated once at module load: the eight clusters that make up the sky. */
+/** Generated once at module load, the eight clusters that make up the sky. */
 const CLOUDS: Cloud[] = ANCHORS.map(buildCloud);
 
 /** Renders the fixed sky gradient and the eight procedural cloud clusters behind the ui. */

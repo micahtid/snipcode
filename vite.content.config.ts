@@ -7,17 +7,14 @@
  * a stable filename (dist/content.js, no hash) the manifest can point at.
  *
  * Kept apart from the sidebar build (vite.config.ts) because the two have
- * incompatible output shapes: the sidebar is an html-driven multi-chunk app, the
+ * incompatible output shapes. The sidebar is an html-driven multi-chunk app, the
  * content script is a flat iife.
  */
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-	// Do not re-copy public/ here; the sidebar build already populates dist/.
+	// Do not re-copy public/ here. The sidebar build already populates dist/.
 	publicDir: false,
-	// storage.ts is bundled here too, so the constant must be defined for this build as well.
-	// This build's id is unused (only the panel reads the hint), but it must resolve.
-	define: { __BUILD_ID__: JSON.stringify(String(Date.now())) },
 	build: {
 		outDir: 'dist',
 		// Never wipe the sidebar build output that ran first.

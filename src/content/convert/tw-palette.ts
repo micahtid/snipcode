@@ -1,26 +1,23 @@
 /**
- * convert/tw-palette.ts: tailwind color palette matcher
+ * Tailwind color palette matcher.
  *
- * Pipeline position: convert
- * Reads from Captured: nothing. It operates on color strings.
- * Writes to Captured: nothing. It is a pure color matcher.
+ * This runs in the convert phase. It reads nothing from Captured, operating on color strings,
+ * and writes nothing back, a pure color matcher. It is a lookup feeding the tailwind converter.
  *
- * A lookup feeding the tailwind converter.
- *
- * Why this exists: tailwind expresses colors as palette tokens (bg-slate-700).
+ * Tailwind expresses colors as palette tokens (bg-slate-700).
  * To emit clean tailwind, an arbitrary captured color must map to the nearest
  * palette entry, but only when the match is perceptually faithful, else the
  * converter must fall back to an arbitrary value (bg-[#4287f5]) so brand colors
  * are not silently drifted. Matching uses ciede2000, a perceptual color distance,
- * with tight thresholds: <1 is exact, 1-2 is an acceptable nudge, >=2 forces an
+ * with tight thresholds. <1 is exact, 1-2 is an acceptable nudge, >=2 forces an
  * arbitrary value. Ported from v1 tailwind-palette.ts, rewritten, full module.
  *
- * The palette table below is the tailwind v3 vocabulary: a finite output-format
+ * The palette table below is the tailwind v3 vocabulary, a finite output-format
  * data table, not a hardcoded list of styling properties or tags, so the
  * no-hardcoded-list rule does not apply to format vocabularies.
  */
 
-/** Tailwind v3 palette: "family-shade" -> hex. */
+/** Tailwind v3 palette, "family-shade" -> hex. */
 const TAILWIND_COLORS: Record<string, string> = {
 	white: '#ffffff', black: '#000000',
 	'slate-50': '#f8fafc', 'slate-100': '#f1f5f9', 'slate-200': '#e2e8f0', 'slate-300': '#cbd5e1', 'slate-400': '#94a3b8', 'slate-500': '#64748b', 'slate-600': '#475569', 'slate-700': '#334155', 'slate-800': '#1e293b', 'slate-900': '#0f172a', 'slate-950': '#020617',
@@ -47,7 +44,7 @@ const TAILWIND_COLORS: Record<string, string> = {
 	'rose-50': '#fff1f2', 'rose-100': '#ffe4e6', 'rose-200': '#fecdd3', 'rose-300': '#fda4af', 'rose-400': '#fb7185', 'rose-500': '#f43f5e', 'rose-600': '#e11d48', 'rose-700': '#be123c', 'rose-800': '#9f1239', 'rose-900': '#881337', 'rose-950': '#4c0519',
 };
 
-// Tightened from v1's earlier 3.0: above ~2.0 brand colors drift visibly, so we
+// Tightened from v1's earlier 3.0. Above ~2.0 brand colors drift visibly, so we
 // force an arbitrary value (bg-[#hex]) instead of an approximate palette token.
 const DELTA_E_EXACT = 1;
 const DELTA_E_CLOSE = 2;
@@ -57,7 +54,7 @@ let labCache: Array<{ name: string; lab: [number, number, number] }> | null = nu
 
 /** The matched palette token plus whether it is perceptually exact. */
 export interface PaletteMatch {
-	name: string; // "Slate-700", and the caller prefixes bg-/text-/border-
+	name: string; // "Slate-700", and the caller prefixes bg-, text-, or border-
 	exact: boolean;
 }
 
@@ -88,8 +85,8 @@ export function matchColor(colorValue: string): PaletteMatch | null {
 }
 
 /**
- * Parses a css color to a 6-digit #hex, or null for colors we cannot/should not
- * match, such as transparent, currentcolor, oklch/oklab, and keywords. Alpha is dropped,
+ * Parses a css color to a 6-digit #hex, or null for colors we cannot or should not
+ * match, such as transparent, currentcolor, oklch and oklab, and keywords. Alpha is dropped,
  * the caller preserves opacity separately.
  *
  * @param value - the css color string
@@ -111,7 +108,7 @@ export function parseColor(value: string): string | null {
 		const [r, g, b] = hslToRgb(Number(hsl[1]) / 360, Number(hsl[2]) / 100, Number(hsl[3]) / 100);
 		return toHex(r, g, b);
 	}
-	// oklch/oklab and named colors other than white/black: not matched here.
+	// oklch, oklab, and named colors other than white and black are not matched here.
 	return null;
 }
 
@@ -200,7 +197,7 @@ function paletteLab(): Array<{ name: string; lab: [number, number, number] }> {
 	return labCache;
 }
 
-/** Clamp + format three channels to #rrggbb. */
+/** Clamp and format three channels to #rrggbb. */
 function toHex(r: number, g: number, b: number): string {
 	return `#${[r, g, b].map((c) => Math.max(0, Math.min(255, Math.round(c))).toString(16).padStart(2, '0')).join('')}`;
 }

@@ -1,58 +1,59 @@
 /**
- * features/states.ts: interactive-state rules (:hover, :focus, :active)
+ * Interactive-state rules (:hover, :focus, :active).
  *
- * Pipeline position: reconcile
- * Reads from Captured: root, clone, measuredStates, foundationRules, componentRules, bakedStyles
- * Writes to Captured: clone, marking elements and appending a <style> of state rules, and warnings
+ * This is a reconcile-phase feature handler. It reads root, clone, measuredStates,
+ * foundationRules, componentRules, and bakedStyles from Captured and writes clone,
+ * marking elements and appending a <style> of state rules, and warnings. It extends the
+ * "ship what renders" approach to the interactive states a static snapshot drops, such
+ * as a button that lightens on hover, a link that underlines, and an input that rings on
+ * focus. The resting cascade discards them because the element is not hovered or focused
+ * at capture time, since el.matches('.btn:hover') is false at rest, so each property
+ * flattens to its resting value. This handler re-emits them so they reproduce in the
+ * standalone artifact.
  *
- * This extends the "ship what renders" approach to the interactive states a static
- * snapshot drops, such as a button that lightens on hover, a link that underlines, and an
- * input that rings on focus. The resting cascade discards them because the element is not
- * hovered or focused at capture time, since el.matches('.btn:hover') is false at rest, so
- * each property flattens to its resting value. This handler re-emits them so they reproduce
- * in the standalone artifact.
+ * There are two sources of truth, and this handler prefers ground truth. When the
+ * capture phase measured the states live (meaning capture/states-measure.ts forced each
+ * state and read what actually computed, so captured.measuredStates is non-null), this
+ * emits those concrete literals. The engine already resolved the cascade, the
+ * inheritance, and every group-hover, descendant, and sibling relationship, so there is
+ * nothing left to parse. When measurement did not run (meaning cdp was busy, so
+ * measuredStates is null), it falls back to copying the page's authored state rules and
+ * re-anchoring their selectors. That reproduces the common case of an element's own
+ * `:hover`, but it cannot follow a relationship a framework encodes out of reach.
  *
- * There are two sources of truth, and this handler prefers ground truth. When the capture
- * phase measured the states live (meaning capture/states-measure.ts forced each state and read
- * what actually computed, so captured.measuredStates is non-null), this emits those concrete
- * literals. The engine already resolved the cascade, the inheritance, and every group-hover,
- * descendant, and sibling relationship, so there is nothing left to parse. When measurement did
- * not run (meaning cdp was busy, so measuredStates is null), it falls back to copying the page's
- * authored state rules and re-anchoring their selectors. That reproduces the common case of an
- * element's own `:hover`, but it cannot follow a relationship a framework encodes out of reach.
- *
- * CSS/spec reference: https://developer.mozilla.org/en-US/docs/Web/CSS/:hover, plus
+ * The relevant spec is https://developer.mozilla.org/en-US/docs/Web/CSS/:hover, plus
  * :focus, :focus-visible, :focus-within, and :active. The trigger set is the closed spec
- * category of dynamic interactive pseudo-classes. The form-state pseudos such as :checked
- * and :disabled are excluded because they reflect current dom state and are already captured
- * at rest.
+ * category of dynamic interactive pseudo-classes. The form-state pseudos such as
+ * :checked and :disabled are excluded because they reflect current dom state and are
+ * already captured at rest.
  *
- * Why a naive re-emit gets it wrong, and how both paths answer it:
+ * Why a naive re-emit gets it wrong, and how both paths answer it.
  *  - A resting value ships as an inline style attribute, and a normal inline declaration
- *    outranks every normal selector, since it is resolved before specificity is consulted. So a
- *    state rule in a <style> block has zero effect unless it is !important. This is the same
- *    reason the email inliner juice keeps :hover in a surviving <style>. State declarations are
- *    therefore emitted !important. Because the state selector matches only while the state is
- *    active, the override applies only during interaction and reverts cleanly at rest.
- *  - A captured selector (`body.dark .nav > .btn:hover`) is written against the live page's
- *    classes and ancestor chain, which the emitters rewrite and the artifact does not carry.
- *    Each marked element is re-anchored to a unique data-snip-state marker, a data-* attribute,
- *    so it survives the tailwind and bem emitters that rewrite class. The markers are joined by
- *    a combinator that is sound because the markers are unique. It is descendant when the
- *    trigger contains the affected element, and general-sibling when they share a parent and the
- *    trigger precedes it.
- *  - There is one irreducible boundary. A state whose trigger element is outside the snipped
- *    subtree (`.outside:hover .snipped`) cannot be reproduced, because the artifact does not
- *    contain the thing to force. That effect is dropped with a warning, never a silent or wrong
- *    result.
+ *    outranks every normal selector, since it is resolved before specificity is
+ *    consulted. So a state rule in a <style> block has zero effect unless it is
+ *    !important. This is the same reason the email inliner juice keeps :hover in a
+ *    surviving <style>. State declarations are therefore emitted !important. Because the
+ *    state selector matches only while the state is active, the override applies only
+ *    during interaction and reverts cleanly at rest.
+ *  - A captured selector (`body.dark .nav > .btn:hover`) is written against the live
+ *    page's classes and ancestor chain, which the emitters rewrite and the artifact does
+ *    not carry. Each marked element is re-anchored to a unique data-snip-state marker, a
+ *    data-* attribute, so it survives the tailwind and bem emitters that rewrite class.
+ *    The markers are joined by a combinator that is sound because the markers are unique.
+ *    It is descendant when the trigger contains the affected element, and general-sibling
+ *    when they share a parent and the trigger precedes it.
+ *  - There is one irreducible boundary. A state whose trigger element is outside the
+ *    snipped subtree (`.outside:hover .snipped`) cannot be reproduced, because the
+ *    artifact does not contain the thing to force. That effect is dropped with a warning,
+ *    never a silent or wrong result.
  *
- * Transform contract: it tags each marked, in-subtree element with a data-snip-state marker and
- * adds `[data-snip-state="n"]:hover {...}` rules, denoised against the resting baked value and
- * emitted !important, to the clone's shared synthesized <style>. See reconcile/synthesized.ts.
- * It touches the clone only. State selectors match nothing at rest, so the resting render is
- * byte-identical.
- * Test fixtures: tests/fixtures/state-{card,form,var,localvar,url,pseudo,transform}.html,
- * registered in tests/fixtures.mjs. The gate measures the resting, state-inactive render.
+ * It tags each marked, in-subtree element with a data-snip-state marker and adds
+ * `[data-snip-state="n"]:hover {...}` rules, denoised against the resting baked value and
+ * emitted !important, to the clone's shared synthesized <style>. See
+ * reconcile/synthesized.ts. It touches the clone only. State selectors match nothing at
+ * rest, so the resting render is byte-identical. The test fixtures are
+ * tests/fixtures/state-{card,form,var,localvar,url,pseudo,transform}.html, registered in
+ * tests/fixtures.mjs. The gate measures the resting, state-inactive render.
  */
 import type { Captured, CssRule, MeasuredState, MeasuredStateDecl } from '../../types';
 import { pairedSubtrees, mediaApplies } from '../match';
@@ -68,7 +69,7 @@ import {
 
 const MARKER = 'data-snip-state';
 
-/** One compound that earns a marker in the output: the subject, or any state-bearing compound. */
+/** One compound that earns a marker in the output, the subject or any state-bearing compound. */
 interface MarkedCompound {
 	/** The live element this compound binds to. */
 	element: Element;
@@ -102,7 +103,7 @@ interface RankedStateDecl {
  * Reproduces the page's interactive states on the clone, preferring the live measurement
  * when the capture phase produced one and falling back to copying authored rules otherwise.
  *
- * @param captured - clone is mutated in place: markers and an appended <style>
+ * @param captured - clone is mutated in place, with markers and an appended <style>
  */
 export function apply(captured: Captured): Captured {
 	if (captured.measuredStates !== null) return applyMeasured(captured, captured.measuredStates);
@@ -118,7 +119,7 @@ export function apply(captured: Captured): Captured {
  * animates in both directions rather than snapping on the way out. No cascade merge and no var()
  * survival remain, because the engine resolved both when the value was measured.
  *
- * @param captured - clone is mutated in place: markers and an appended <style>
+ * @param captured - clone is mutated in place, with markers and an appended <style>
  * @param measuredStates - the computed deltas per trigger and state from capture/states-measure.ts
  */
 function applyMeasured(captured: Captured, measuredStates: MeasuredState[]): Captured {
@@ -189,12 +190,12 @@ function applyMeasured(captured: Captured, measuredStates: MeasuredState[]): Cap
 	return captured;
 }
 
-/** One emit unit: a trigger clone forced into `states`, and one affected clone layer's measured delta. */
+/** One emit unit, a trigger clone forced into `states`, and one affected clone layer's measured delta. */
 interface MeasuredUnit {
 	triggerClone: Element;
 	states: string[];
 	affectedClone: Element;
-	/** The affected layer: '' for the element box, '::after'/'::before' for a generated box. */
+	/** The affected layer, '' for the element box, '::after' or '::before' for a generated box. */
 	pseudoElement: string;
 	/** The affected original element, for reading its resting transition live at emit time. */
 	affectedOriginal: Element;
@@ -324,8 +325,8 @@ function denoiseMeasured(decls: MeasuredStateDecl[], resting: Map<string, string
 		const value = decls.find((d) => d.property === prop)?.value ?? resting?.get(prop);
 		return value !== undefined && value !== '' && value !== 'none';
 	};
-	// transform-origin/perspective-origin resolve to per-element pixels, so a size change shifts
-	// them, but they only have an effect on a box that actually establishes a transform/perspective.
+	// transform-origin and perspective-origin resolve to per-element pixels, so a size change shifts
+	// them, but they only have an effect on a box that actually establishes a transform or perspective.
 	const hasTransform = present('transform') || present('translate') || present('rotate') || present('scale');
 	const hasPerspective = present('perspective');
 	const forcedColor = decls.find((d) => d.property === 'color')?.value;
@@ -351,7 +352,7 @@ function denoiseMeasured(decls: MeasuredStateDecl[], resting: Map<string, string
  * transition shipped at rest governs the animation and re-emitting would be redundant. Otherwise
  * it broadens to `all` with the element's longest-running timing, so a property the resting
  * transition does not cover, such as the dot's colors-only timing vs our pinned width, animates
- * in step rather than snapping. This is the deliberate approximation: coordinated motion at the
+ * in step rather than snapping. This is the deliberate approximation, coordinated motion at the
  * element's rhythm, not exact per-property timing.
  *
  * @param original - the affected live element, read at rest
@@ -413,7 +414,7 @@ function splitCommas(value: string): string[] {
  * declarations. This is the fallback used only when live measurement did not run. It cannot
  * follow a relationship a framework buries in `:is()` or group-hover grammar.
  *
- * @param captured - clone is mutated in place: markers and an appended <style>
+ * @param captured - clone is mutated in place, with markers and an appended <style>
  */
 function applyCopied(captured: Captured): Captured {
 	const pairs = pairedSubtrees(captured.root, captured.clone);
@@ -589,7 +590,7 @@ function findRelated(right: Element, combinator: Combinator, compound: Compound)
 		const prev = right.previousElementSibling;
 		return prev && safeMatches(prev, structural) ? prev : null;
 	}
-	// Subsequent-sibling: the nearest preceding sibling that matches.
+	// Subsequent-sibling, the nearest preceding sibling that matches.
 	for (let s = right.previousElementSibling; s; s = s.previousElementSibling) if (safeMatches(s, structural)) return s;
 	return null;
 }
@@ -679,7 +680,7 @@ function mergeRule(rule: CssRule, order: number, winners: Map<string, RankedStat
 	}
 }
 
-/** Cascade ordering: !important beats normal, then higher specificity, then later capture order. */
+/** Cascade ordering, !important beats normal, then higher specificity, then later capture order. */
 function stateWins(a: RankedStateDecl, b: RankedStateDecl): boolean {
 	if (a.important !== b.important) return a.important;
 	if (a.specificity !== b.specificity) return a.specificity > b.specificity;

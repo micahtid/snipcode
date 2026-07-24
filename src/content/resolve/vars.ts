@@ -1,24 +1,19 @@
 /**
- * resolve/vars.ts: css custom property resolution
+ * Css custom property resolution.
  *
- * Pipeline position: resolve
- * Reads from Captured: root, clone, bakedStyles, variables
- * Writes to Captured: bakedStyles and clone (resolves var() refs and emits root vars)
+ * This runs in the resolve phase. It reads root, clone, bakedStyles, and variables, and writes
+ * bakedStyles and clone, resolving var() refs and emitting root vars. Variables travel with
+ * their definitions, or resolve to literals. Earlier baking deliberately preserved authored
+ * var() references on the baked elements. But a var() only renders if its definition survives
+ * into the emitted snip. A definition survives when it lives on :root (re-emitted onto the snip
+ * root here) or on an element inside the snip subtree (already inline on that clone node). A
+ * definition on an ancestor *outside* the subtree does not survive serialization, so its
+ * references are resolved to the computed literal read from the live element, which already
+ * resolved them in-page.
  *
- * Variables travel with their definitions, or resolve to literals.
- *
- * Why this exists: earlier baking deliberately preserved authored var() references
- * on the baked elements. But a var() only renders if its definition survives into the
- * emitted snip. A definition survives when it lives on :root (re-emitted onto the
- * snip root here) or on an element inside the snip subtree (already inline on
- * that clone node). A definition on an ancestor *outside* the subtree does not
- * survive serialization, so its references are resolved to the computed literal
- * read from the live element, which already resolved them in-page.
- *
- * Single pass: every reference is decided in one sweep.
- * The only loop is computing the dependency closure of the root vars we keep,
- * that is resolving a definition's own var() deps, not a second orphan-recovery
- * pass over the output.
+ * It is a single pass, so every reference is decided in one sweep. The only loop is computing
+ * the dependency closure of the root vars we keep, that is resolving a definition's own var()
+ * deps, not a second orphan-recovery pass over the output.
  */
 import type { Captured } from '../types';
 import { pairedSubtrees } from '../reconcile/match';
@@ -43,8 +38,8 @@ export function resolveVariables(captured: Captured): void {
 	for (const v of captured.variables) {
 		if (v.scope === 'root') rootVars.set(v.name, v.value);
 	}
-	// Ambient definitions a state rule may also lean on: every foundation-scoped custom
-	// property, meaning the `*`/html/body resets, for example older tailwind's `--tw-translate-x: 0`
+	// Ambient definitions a state rule may also lean on, every foundation-scoped custom
+	// property, meaning the `*`, html, and body resets, for example older tailwind's `--tw-translate-x: 0`
 	// transform chain, on top of :root. Those resets carry no @property registration, so
 	// they inherit. Re-emitting a referenced one on the root carries it to the subject. Used
 	// only by the state path. The resting path below still resolves an outside-snip var to
@@ -88,7 +83,7 @@ export function resolveVariables(captured: Captured): void {
 		}
 	}
 
-	// Synthesized state/pseudo rules carry their own var() references, which the
+	// Synthesized state or pseudo rules carry their own var() references, which the
 	// bakedStyles loop above never sees. They live in a <style>, not in bakedStyles.
 	// Resolve them against the ambient definitions, with one state-specific exception.
 	// See resolveSynthesizedVariables.
@@ -103,20 +98,20 @@ export function resolveVariables(captured: Captured): void {
 /**
  * Resolves the var() references inside the synthesized <style>, meaning the state and pseudo
  * rules. A reference whose definition survives the snip is kept verbatim and renders
- * standalone: a subtree-scoped definition already travels on its clone node, and a
+ * standalone. A subtree-scoped definition already travels on its clone node, and a
  * :root definition is marked needed so it is re-emitted on the root.
  *
  * A reference resolves in the standalone artifact through any of the ways a value
- * legitimately reaches it, so a declaration is kept whenever all of its references do:
- *  - a surviving definition: a subtree-baked value, a re-emitted ambient definition that is
- *    :root or foundation/`*`-scoped, or a custom property the synthesized rules define
+ * legitimately reaches it, so a declaration is kept whenever all of its references do.
+ *  - A surviving definition, meaning a subtree-baked value, a re-emitted ambient definition
+ *    that is :root or foundation or `*`-scoped, or a custom property the synthesized rules define
  *    themselves, as in `:hover { --x: red; color: var(--x) }` or the tailwind `--tw-*` chain,
  *    resolved to a fixpoint so a chain of synthesized defs holds.
- *  - a registered @property initial-value: `var(--x)` yields the registered initial even
+ *  - A registered @property initial-value, where `var(--x)` yields the registered initial even
  *    when nothing sets it, and reconcile/properties.ts ships those registrations.
- *  - a fallback on the reference itself: `var(--x, black)` always produces a value.
+ *  - A fallback on the reference itself, where `var(--x, black)` always produces a value.
  *
- * Only a reference that resolves through none of these is unreproducible: its state-time
+ * Only a reference that resolves through none of these is unreproducible. Its state-time
  * value cannot be copied, because the live element's computed value is its RESTING value,
  * wrong for a `:hover { color: var(--accent-hover) }` whose accent only takes its hover
  * value while hovered. Only a forced-state measurement could get it, the deferred
@@ -153,7 +148,7 @@ function resolveSynthesizedVariables(
 		synthDefs.set(decl.prop, [...(synthDefs.get(decl.prop) ?? []), decl.value]);
 	});
 
-	// Fixpoint: a synth-defined var survives once one of its definitions resolves. Re-scan
+	// Fixpoint, so a synth-defined var survives once one of its definitions resolves. Re-scan
 	// until no new name becomes survivable.
 	const survivableSynth = new Set<string>();
 	for (let changed = true; changed; ) {
@@ -225,7 +220,7 @@ function emitAmbientVars(captured: Captured, ambientVars: Map<string, string>, n
 		if (value === undefined || baked.has(name)) continue;
 		baked.set(name, value);
 		setInline(rootClone, name, value);
-		// Flip the source-of-truth flag for the :root ones, for transparency/emit.
+		// Flip the source-of-truth flag for the :root ones, for transparency and emit.
 		for (const v of captured.variables) if (v.name === name && v.scope === 'root') v.resolved = true;
 	}
 	captured.bakedStyles.set(rootClone, baked);

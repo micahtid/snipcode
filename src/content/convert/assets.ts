@@ -1,22 +1,22 @@
 /**
- * convert/assets.ts: split inline svgs, data-uri images, and data-uri fonts into referenced files
+ * Split inline svgs, data-uri images, and data-uri fonts into referenced files.
  *
- * Pipeline position: convert. This is a delivery-time split, after the document is assembled.
- * Reads from Captured: nothing. It operates on the assembled document string.
- * Writes to Captured: nothing. It returns the file set.
+ * This runs in the convert phase, a delivery-time split after the document is assembled. It
+ * reads nothing from Captured, operating on the assembled document string, and writes nothing
+ * back, returning the file set.
  *
- * Why this exists: the html-shaped output is one self-contained document with its
+ * The html-shaped output is one self-contained document with its
  * svg icons, data-uri images, and @font-face fonts inlined. That renders and grades as
  * a single file, but it is hard to read and reuse. A 30-line icon sits in the middle of
  * the markup, a base64 image is an unreadable wall, and an embedded font is hundreds of
  * KB that dwarf the stylesheet a user actually reads. This lifts each inline <svg>, each
- * data: image, and each @font-face src font into its own file and rewrites the document
+ * data-uri image, and each @font-face src font into its own file and rewrites the document
  * to reference it (<img src="icon-1.svg">, url("image-1.png"), url("font-1.woff2")), so
  * the sidebar can present them as separate, switchable files. The caller keeps the
  * original self-contained document for preview and grading. This split is purely the
  * user-facing delivery shape.
  *
- * Render fidelity: an svg loaded through <img> no longer inherits the page's color.
+ * For render fidelity, an svg loaded through <img> no longer inherits the page's color.
  * So each icon's currentColor is resolved by laying the document out in a hidden
  * iframe and reading the svg's computed color. That computed color is ground truth
  * whether it is set inline, by a presentation attribute, or by a class rule, so it is
@@ -56,7 +56,7 @@ const DATA_IMG_URL = /url\(\s*(["']?)(data:image\/[^"')]+)\1\s*\)/gi;
  *
  * @param documentHtml - the self-contained html-shaped output
  * @param warnings - appended to if the split is skipped
- * @returns index.html, then styles.css, then the extracted svg/image files in encounter order
+ * @returns index.html, then styles.css, then the extracted svg and image files in encounter order
  */
 export function splitAssets(documentHtml: string, warnings: string[]): AssetFile[] {
 	try {
@@ -90,7 +90,7 @@ export function splitAssets(documentHtml: string, warnings: string[]): AssetFile
 			register(assets, fileByContent, dataUrl, () => `image-${++imageCount}.${mimeExtension(dataUrl)}`, 'image', { dataUrl }),
 		);
 
-		// Fonts are the bulk of the stylesheet's bytes: a single @font-face src data uri can be
+		// Fonts are the bulk of the stylesheet's bytes. A single @font-face src data uri can be
 		// hundreds of KB. Lift each to its own file the way images are lifted, so the css a user
 		// reads shrinks to the @font-face rule plus a short relative url.
 		html = extractFontUris(html, (dataUrl, ext) =>
@@ -118,7 +118,7 @@ const STYLE_BLOCK = /<style\b[^>]*>([\s\S]*?)<\/style>/gi;
  * in its place. The pipeline composes exactly one style block, so anything else means the
  * document is not the shape this understands and is left whole rather than half-rewritten,
  * matching how the asset split degrades. The self-contained document the caller keeps for
- * preview and grading is untouched: only the delivered file set is rewritten here.
+ * preview and grading is untouched, only the delivered file set is rewritten here.
  *
  * @param html - the document, already asset-split
  * @param warnings - appended to when the lift is skipped
@@ -246,7 +246,7 @@ function buildImgTag(svg: string, name: string, box: SvgBox | undefined): string
  * now-baked paint props. The svg's size, display, and baseline can come from an attribute, an
  * inline style, or a class rule. Only the computed box (`box`) captures all three, so it is
  * the ground truth for those. Any other box props authored inline, a margin say, are kept as
- * written. `display`/`vertical-align` are emitted only when they deviate from the <img>
+ * written. `display` and `vertical-align` are emitted only when they deviate from the <img>
  * defaults (inline, baseline), so a plain icon stays clean.
  */
 function imgStyle(el: Element, box: SvgBox | undefined): string {
@@ -272,14 +272,14 @@ function imgStyle(el: Element, box: SvgBox | undefined): string {
 // Data-uri image extraction
 // ---------------------------------------------------------------------------
 
-/** Replaces each data:image uri, in src/href attrs and css url(), with the filename `replace` returns. */
+/** Replaces each data image uri, in src and href attrs and css url(), with the filename `replace` returns. */
 function extractDataUris(html: string, replace: (dataUrl: string) => string): string {
 	return html
 		.replace(DATA_IMG_ATTR, (_m, prefix: string, quote: string, dataUrl: string) => `${prefix}${quote}${replace(dataUrl)}${quote}`)
 		.replace(DATA_IMG_URL, (_m, quote: string, dataUrl: string) => `url(${quote}${replace(dataUrl)}${quote})`);
 }
 
-/** The file extension for a data:image uri (svg+xml -> svg, jpeg -> jpg). */
+/** The file extension for a data image uri (svg+xml -> svg, jpeg -> jpg). */
 function mimeExtension(dataUrl: string): string {
 	const subtype = (/^data:image\/([a-z0-9.+-]+)/i.exec(dataUrl)?.[1] ?? 'png').toLowerCase();
 	if (subtype === 'svg+xml') return 'svg';
@@ -300,7 +300,7 @@ function mimeExtension(dataUrl: string): string {
  */
 const DATA_FONT_URL = /url\(\s*(["']?)(data:[^"')]+)\1\s*\)(\s*format\(\s*["']?([\w+-]+)["']?\s*\))?/gi;
 
-/** The extension for a font mime type: one reliable signal a data uri carries a font. */
+/** The extension for a font mime type, one reliable signal a data uri carries a font. */
 const FONT_MIME_EXT: Record<string, string> = {
 	'font/woff2': 'woff2', 'font/woff': 'woff', 'font/ttf': 'ttf', 'font/truetype': 'ttf',
 	'font/otf': 'otf', 'font/opentype': 'otf', 'font/sfnt': 'ttf',

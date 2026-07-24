@@ -1,21 +1,17 @@
 /**
- * capture/sheets.ts: stylesheet discovery via cssom
+ * Stylesheet discovery via cssom.
  *
- * Pipeline position: capture
- * Reads from Captured: n/a (reads the live document.styleSheets)
- * Writes to Captured: stylesheets, foundationRules, componentRules, variables,
- * fonts, keyframes, inaccessible.crossOriginStylesheets
- *
- * Why this exists: a snipped element's appearance comes from rules scattered
- * across every sheet on the page, <style> blocks, linked css, injected sheets.
- * This module flattens all of them into a single CssRule[],
- * preserving each rule's grouping context (@media/@container/@layer/@supports) so
- * later phases can decide what survives serialization. It splits broadly-scoped
- * "foundation" rules (html/body/:root/*) from element-scoped "component" rules.
- * reconcile/match.ts refines the component set by actually matching
- * against captured elements. Cross-origin sheets that throw on .cssRules are
- * recorded as inaccessible here and recovered via cdp/background fetch later.
- * Shadow + adoptedStyleSheets discovery lands with the shadow handler.
+ * This runs in the capture phase. It reads the live document.styleSheets and writes
+ * stylesheets, foundationRules, componentRules, variables, fonts, keyframes, and
+ * inaccessible.crossOriginStylesheets. A snipped element's appearance comes from rules
+ * scattered across every sheet on the page, <style> blocks, linked css, and injected sheets.
+ * This module flattens all of them into a single CssRule[], preserving each rule's grouping
+ * context (@media, @container, @layer, and @supports) so later phases can decide what survives
+ * serialization. It splits broadly-scoped "foundation" rules (html, body, :root, and *) from
+ * element-scoped "component" rules. reconcile/match.ts refines the component set by actually
+ * matching against captured elements. Cross-origin sheets that throw on .cssRules are recorded
+ * as inaccessible here and recovered via cdp and background fetch later. Shadow and
+ * adoptedStyleSheets discovery lands with the shadow handler.
  */
 import type { CssRule, CssVariable, FontFace, Keyframes, Stylesheet } from '../types';
 
@@ -120,7 +116,7 @@ const URL_IN_SRC = /url\(\s*(['"]?)([^'")]+)\1\s*\)/g;
 
 /**
  * Rewrites the src of every face from index `start` onward to an absolute url against
- * `base`, the owning stylesheet's url. data:/blob:/already-absolute urls and local()
+ * `base`, the owning stylesheet's url. data and blob urls, already-absolute urls, and local()
  * sources are left untouched, so the rewrite is idempotent.
  *
  * @param fonts - the discovered faces, mutated in place from `start`
