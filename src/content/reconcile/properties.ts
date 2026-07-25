@@ -14,7 +14,7 @@
  * shared this scan rather than walk the cssom twice with copied logic.
  *
  * CSSPropertyRule is not in every dom lib version, so the rule is detected
- * structurally by its descriptor fields, exactly as before.
+ * structurally by its descriptor fields.
  */
 
 /** One registered @property, its name, its initial-value or null when none, and its source text. */

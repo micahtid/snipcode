@@ -1,8 +1,8 @@
 /**
  * Polish-phase orchestrator, byok llm polish.
  *
- * This runs in the polish phase. It does not read from Captured. It operates on the emitted
- * html and css. It does not write to Captured. It returns polished html and css.
+ * This runs in the polish phase. It does not read from or write to Captured, operating on the
+ * emitted html and css and returning polished html and css.
  *
  * The orphan prune in restore.finalize removes only dead code.
  *

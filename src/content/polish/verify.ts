@@ -10,9 +10,8 @@
  * confirms the polished artifact renders identically to the pre-polish one before it ships, so
  * a bad edit falls back to the deterministic output rather than degrading fidelity.
  *
- * The polish edits never add or remove elements. They only rename classes, swap tag names,
- * and add comments, so the two element trees are structurally identical and a lockstep walk
- * pairs them by position. Each pair's full computed style is compared in the isolated
+ * The polish edits never add or remove elements, so the two element trees are structurally
+ * identical and a lockstep walk pairs them by position. Each pair's full computed style is compared in the isolated
  * pasted-snip environment both artifacts ship into. Equal computed styles on the paired dom
  * imply an identical render.
  */

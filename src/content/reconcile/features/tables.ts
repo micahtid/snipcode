@@ -11,7 +11,6 @@
  * element whose computed value for one of these properties is non-default. Non-tables
  * compute the defaults and are skipped, so no tag check is needed. It bakes the
  * non-default values onto the matching clone element (via the shared reconcile helper).
- * It touches bakedStyles and the clone only.
  *
  * border-collapse, border-spacing, table-layout, and caption-side change a table's
  * geometry, but they are inherited or table-scoped and frequently set on the <table> by

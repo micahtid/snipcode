@@ -1,9 +1,9 @@
 /**
  * Sidebar picker control.
  *
- * The picker is triggered from the sidebar, and this is that trigger, a split action whose
- * main segment runs the active mode and whose chevron segment opens a small menu above it to
- * choose the mode. Two groups of modes share the menu, the element picks, snip and assistive,
+ * Triggered from the sidebar, this is a split action whose main segment runs the active mode
+ * and whose chevron segment opens a small menu above it to choose the mode. Two groups of modes
+ * share the menu, the element picks, snip and assistive,
  * which inject the page overlay so the user selects an element, and the page scans, colors,
  * fonts, assets, and schema, which read the whole page at once. The main button's label is the
  * active-mode indicator. Both groups lift their in-flight state up to App, "picking" for

@@ -88,14 +88,34 @@ export async function listSnippets(): Promise<SnippetRecord[]> {
 	return (stored[SNIPPETS_KEY] as SnippetRecord[] | undefined) ?? [];
 }
 
+// Snippet writes are read-modify-write on one shared key, so they run one at a time through this
+// chain. Concurrent writers, a batch auto-persisting while the panel toggles saved, would
+// otherwise clobber each other last-write-wins.
+let snippetWrites: Promise<void> = Promise.resolve();
+
+/**
+ * Apply a mutation to the stored snippet list, serialized behind any write already in flight.
+ *
+ * @param mutate - maps the current list to the list to store
+ */
+function mutateSnippets(mutate: (records: SnippetRecord[]) => SnippetRecord[]): Promise<void> {
+	const run = snippetWrites.then(async () => {
+		const current = await listSnippets();
+		await chrome.storage.local.set({ [SNIPPETS_KEY]: mutate(current) });
+	});
+	// Swallow on the shared chain so one failed write cannot wedge every later one, while the
+	// returned promise still rejects so the caller can log it.
+	snippetWrites = run.catch(() => {});
+	return run;
+}
+
 /**
  * Append a snippet, evicting the oldest unsaved records beyond the 50-cap in fifo order.
  *
  * @param record - the snippet to store
  */
 export async function storeSnippet(record: SnippetRecord): Promise<void> {
-	const current = await listSnippets();
-	await chrome.storage.local.set({ [SNIPPETS_KEY]: evict([...current, record]) });
+	await mutateSnippets((current) => evict([...current, record]));
 }
 
 /**
@@ -117,8 +137,7 @@ function evict(records: SnippetRecord[]): SnippetRecord[] {
 
 /** Clear the history, keeping every saved snippet. Clear is scoped to history only. */
 export async function clearSnippets(): Promise<void> {
-	const current = await listSnippets();
-	await chrome.storage.local.set({ [SNIPPETS_KEY]: current.filter((r) => r.saved) });
+	await mutateSnippets((current) => current.filter((r) => r.saved));
 }
 
 /**
@@ -130,7 +149,5 @@ export async function clearSnippets(): Promise<void> {
  * @param saved - true to save it, false to return it to history
  */
 export async function setSnippetSaved(id: string, saved: boolean): Promise<void> {
-	const current = await listSnippets();
-	const next = current.map((r) => (r.id === id ? { ...r, saved } : r));
-	await chrome.storage.local.set({ [SNIPPETS_KEY]: evict(next) });
+	await mutateSnippets((current) => evict(current.map((r) => (r.id === id ? { ...r, saved } : r))));
 }

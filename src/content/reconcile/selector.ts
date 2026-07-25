@@ -92,9 +92,9 @@ function isIdentChar(ch: string): boolean {
 }
 
 /**
- * Cheap pre-filter, whether a selector mentions any dynamic interactive pseudo-class
- * at all. Used to skip the full parse for the overwhelming majority of rules that
- * carry none. A false positive, where the token appears inside a string or comment,
+ * Cheap pre-filter, whether a selector mentions any dynamic interactive pseudo-class.
+ * Used to skip the full parse for the overwhelming majority of rules that carry none.
+ * A false positive, where the token appears inside a string or comment,
  * only costs a parse that then finds nothing, never a wrong result.
  *
  * @param selector - the rule selector text

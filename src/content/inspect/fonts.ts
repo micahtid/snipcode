@@ -3,7 +3,7 @@
  *
  * This is a page-scan inspector that reads the live dom directly and does not run the element
  * pipeline. It runs live, so the page must be loaded, reads document and window, and writes
- * nothing, a pure extraction with no side effects. The fonts inspector lists every font family
+ * nothing, a pure extraction. The fonts inspector lists every font family
  * the page renders, most-used first, so the panel can show an "Aa" preview, the web and system
  * origin, and the variant count. Web versus system is decided by the FontFaceSet
  * (`document.fonts`), which mirrors every @font-face the page declares. Usage and variants come

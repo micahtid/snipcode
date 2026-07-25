@@ -2,8 +2,8 @@
  * Page-wide asset extractor.
  *
  * This is a page-scan inspector that reads the live dom directly and does not run the element
- * pipeline. It runs live, so the page must be loaded, reads document and window, and writes
- * nothing, a pure extraction with no side effects. The assets inspector lists every image, media
+ * pipeline. It needs the page loaded, reads document and window, and writes nothing, a pure
+ * extraction. The assets inspector lists every image, media
  * file, css background, favicon, and inline svg the page uses so the panel can preview each and
  * download it. Each record carries the original url, so the card previews it with a plain `<img>`
  * and only fetches bytes on download. Inline svgs have no url, so their truncated markup rides

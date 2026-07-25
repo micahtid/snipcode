@@ -19,8 +19,8 @@
  * all act on whichever component is active. Download-all becomes a single zip with a folder
  * per component, since firing one prompt per file across n components is unusable.
  *
- * Note that live format switching, re-emitting all 7 formats without a re-snip, is a
- * deliberate follow-up that is not wired here. `Captured` holds live dom and cannot be
+ * Live format switching, re-emitting all 7 formats without a re-snip, is a
+ * deliberate follow-up not wired here. `Captured` holds live dom and cannot be
  * shipped back to re-emit, and polish only applies to html and bem. The panel renders
  * whichever format the pipeline produced from the settings default output.
  */
@@ -29,7 +29,7 @@ import { Bookmark, Check, Copy, Download, Eye, MousePointer2 } from 'lucide-reac
 import type { AssetFile, SnipPayload } from '../content/types';
 import { EmptyState } from './EmptyState';
 import { dataUrlToBase64, downloadBlob, downloadZip, triggerDownload, type ZipEntry } from '../utils/download';
-import { setSnippetSaved } from '../utils/storage';
+import { listSnippets, setSnippetSaved } from '../utils/storage';
 import { COLORS, FLASH_MS, FONT_CODE, RADIUS, SURFACE } from '../theme';
 
 /**
@@ -50,15 +50,28 @@ export function ResultPanel({ result }: ResultPanelProps) {
 	// below. Switching component always lands on its first file, the index document.
 	const [activeComponent, setActiveComponent] = useState(0);
 	const [activeFileIndex, setActiveFileIndex] = useState(0);
-	// Which snippet ids the user saved from this panel. A fresh snip lands unsaved, so the
-	// bookmark starts as an outline and this set stays empty until the user clicks it.
+	// Which snippet ids are currently saved, read from storage so the bookmark matches the history
+	// view rather than only reflecting clicks made here.
 	const [savedIds, setSavedIds] = useState<ReadonlySet<string>>(new Set());
-	// A new snip opens on component 1's first file, the index document, and clears the save
-	// state so the bookmark reflects the new record rather than the previous one.
+	// A new snip resets to component 1's first file. savedIds syncs from storage and stays live
+	// via storage.onChanged, so saving or unsaving from the history view shows here too.
 	useEffect(() => {
 		setActiveComponent(0);
 		setActiveFileIndex(0);
-		setSavedIds(new Set());
+		let live = true;
+		const sync = async (): Promise<void> => {
+			const ids = new Set((await listSnippets()).filter((r) => r.saved).map((r) => r.id));
+			if (live) setSavedIds(ids);
+		};
+		void sync();
+		const onChanged = (changes: Record<string, chrome.storage.StorageChange>, area: string): void => {
+			if (area === 'local' && changes['snippets']) void sync();
+		};
+		chrome.storage.onChanged.addListener(onChanged);
+		return () => {
+			live = false;
+			chrome.storage.onChanged.removeListener(onChanged);
+		};
 	}, [result]);
 
 	// The result grouped by component, each carrying its own files. A single snip is one
@@ -133,15 +146,10 @@ export function ResultPanel({ result }: ResultPanelProps) {
 	// best-effort, matching how the snip itself was persisted, so a storage failure only
 	// warns and leaves the bookmark showing its real, unchanged state.
 	const onToggleSaved = async (id: string): Promise<void> => {
-		const next = !savedIds.has(id);
 		try {
-			await setSnippetSaved(id, next);
-			setSavedIds((ids) => {
-				const updated = new Set(ids);
-				if (next) updated.add(id);
-				else updated.delete(id);
-				return updated;
-			});
+			await setSnippetSaved(id, !savedIds.has(id));
+			// The storage.onChanged listener refreshes savedIds, so the bookmark reflects the
+			// stored state, including an eviction unsaving at the cap can trigger.
 		} catch (err) {
 			console.warn('snipcode: could not update saved state', err);
 		}
@@ -158,7 +166,7 @@ export function ResultPanel({ result }: ResultPanelProps) {
 		downloadBlob(new Blob([file.text ?? ''], { type: mimeFor(file.language) }), file.name);
 	};
 
-	// Download every file of a split snip, so index.html lands next to the svg/image files it
+	// Download every file of a split snip, so index.html lands next to the svg or image files it
 	// references and renders standalone, or the single file otherwise. A batch instead saves
 	// one zip with a folder per component, since n components times m files would otherwise
 	// fire a download prompt each. File names inside a folder are the original ones, so each
@@ -296,8 +304,8 @@ function buildViews(result: SnipResult): ComponentView[] {
 
 // Preview makes sense for the html-shaped formats, whose output is a self-contained
 // document (markup plus an inline stylesheet) that renders on its own. Those are the
-// html format with semantic bem classes plus css, and the bem-scss/legacy bem-css
-// variants. Tailwind/jsx/vue need a build step or a framework, so they would not render standalone.
+// html format with semantic bem classes plus css, and the bem-scss and legacy bem-css
+// variants. Tailwind, jsx, or vue need a build step or a framework, so they would not render standalone.
 const PREVIEWABLE: ReadonlySet<string> = new Set(['html', 'bem-css', 'bem-scss']);
 
 /**
@@ -314,7 +322,7 @@ const FALLBACK_FILE: Record<string, { name: string; language: AssetFile['languag
 
 /**
  * One result's files. For html-shaped snips this is the pipeline's split, index.html plus
- * styles.css plus the lifted svg/image files. Otherwise it is one file named for the format,
+ * styles.css plus the lifted svg or image files. Otherwise it is one file named for the format,
  * so a jsx snip downloads as Component.jsx rather than as a synthetic output.html.
  */
 function filesOf(result: SnipResult): AssetFile[] {
@@ -344,7 +352,12 @@ function warningLabel(count: number): string {
 /** One zip entry for a file, filed under its component folder with its original file name. */
 function zipEntry(view: ComponentView, file: AssetFile): ZipEntry {
 	const path = `component-${view.index}/${file.name}`;
-	return file.dataUrl ? { path, base64: dataUrlToBase64(file.dataUrl) } : { path, text: file.text ?? '' };
+	if (!file.dataUrl) return { path, text: file.text ?? '' };
+	const base64 = dataUrlToBase64(file.dataUrl);
+	// An unreadable data url decodes to '', which buildZip would silently drop, so warn instead
+	// of losing the asset.
+	if (!base64) console.warn(`snipcode: skipping ${path}, its data url could not be decoded`);
+	return { path, base64 };
 }
 
 /** The download mime type for a text file's language. Image files use their data: url instead. */
@@ -367,7 +380,7 @@ const header: React.CSSProperties = {
 	background: SURFACE.headerGradient, borderBottom: `1px solid ${SURFACE.border}`,
 };
 const actions: React.CSSProperties = { display: 'flex', gap: '2px', alignItems: 'center' };
-/** Separates the heavy download action from the light copy/save pair beside it. */
+/** Separates the heavy download action from the light copy and save pair beside it. */
 const downloadAction: React.CSSProperties = { marginLeft: '4px' };
 /** The component tabs, one per selected element, as file-style tabs rather than round pills. */
 const componentBar: React.CSSProperties = {

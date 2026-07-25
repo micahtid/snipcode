@@ -10,7 +10,7 @@
  * https://developer.mozilla.org/en-US/docs/Web/CSS/background-image. It detects an
  * <img> with srcset or inside <picture>, or a baked background-image with a relative
  * url(), and early-returns when none apply. It pins each <img> to the browser-resolved
- * currentSrc, which is the image that actually rendered at the captured viewport, and
+ * currentSrc, which is the image that rendered at the captured viewport, and
  * drops srcset, sizes, and <source>s so it renders deterministically. It also
  * absolutizes background-image url()s. It mutates the clone and bakedStyles only and
  * does no network work (the handler contract).

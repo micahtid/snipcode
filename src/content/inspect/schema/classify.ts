@@ -2,7 +2,7 @@
  * Semantic element classifier.
  *
  * This is a page-scan inspector that reads the live dom directly and does not run the element
- * pipeline. It runs live, reads document and window on per-element computed styles, and writes
+ * pipeline. It reads document and window on per-element computed styles, and writes
  * nothing, a pure classification. The schema walk needs each element's semantic role, such as
  * heading, button, card, or container, to build the structure tree and group component
  * blueprints. Role is decided from aria role, then tag name, then style heuristics. A card has a

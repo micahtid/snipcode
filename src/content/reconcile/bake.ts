@@ -86,8 +86,8 @@ export function reconcile(captured: Captured): void {
  */
 function bakeRootContext(original: Element, clone: Element, captured: Captured): void {
 	const baked = captured.bakedStyles.get(clone) ?? new Map<string, string>();
-	bakeInheritedDivergence(original, baked); // inherited divergence
-	bakeEscapedLayout(original, baked); // escaped layout
+	bakeInheritedDivergence(original, baked);
+	bakeEscapedLayout(original, baked);
 	captured.bakedStyles.set(clone, baked);
 	writeInline(clone, baked);
 }

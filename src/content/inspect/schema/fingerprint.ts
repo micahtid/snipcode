@@ -2,8 +2,8 @@
  * Compact style fingerprints and abbreviations.
  *
  * This is a page-scan inspector that reads the live dom directly and does not run the element
- * pipeline. It runs live, reads document and window on per-element computed styles, and writes
- * nothing, a pure computation. The schema collapses elements that look identical into a single
+ * pipeline. It reads document and window for per-element computed styles and writes nothing, a
+ * pure computation. The schema collapses elements that look identical into a single
  * style-map entry. A fingerprint is the sorted, abbreviated list of an element's non-default
  * design properties, so two elements with the same fingerprint share a style. The abbreviations
  * keep the style map compact, and they must match the abbreviation legend in inspect/prompts.ts

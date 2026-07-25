@@ -4,7 +4,6 @@
  * This runs in the convert phase. It reads the clone via the bem emitter and writes nothing
  * back. It is a format transform of the baked result.
  *
- * The vue format emits a single-file component.
  * Vue templates are html, where class stays class unlike jsx, so this reuses the
  * bem-css emitter for class-based markup and a stylesheet, then wraps the markup
  * in <template> and the css in <style scoped>. A vue template needs one root

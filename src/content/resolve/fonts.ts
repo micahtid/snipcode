@@ -5,8 +5,7 @@
  * src, narrowed to the faces the snip renders. The travel-with-the-snip rule for fonts is that
  * a used custom font must carry its @font-face and an absolute src so it loads from the snip's
  * new home. @font-face src urls are usually relative to the source page, so pasted elsewhere
- * they 404. This resolves them to absolute urls and narrows the captured @font-face list to the
- * faces the snip actually renders. A source page commonly ships every weight of a family, light
+ * they 404. A source page commonly ships every weight of a family, light
  * through bold, while a snipped component renders only one or two, so narrowing to the used
  * family is not enough, since the other weights are dead @font-face rules and dead font
  * downloads. The narrowing therefore matches on the full family, weight, and style that the

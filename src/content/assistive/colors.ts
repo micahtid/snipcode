@@ -34,7 +34,7 @@ export function extractColors(root: Element): ColorUse[] {
 	return [...counts.entries()].map(([value, count]) => ({ value, count })).sort((a, b) => b.count - a.count);
 }
 
-/** True for fully-transparent / absent paint values that carry no palette signal. */
+/** True for fully-transparent or absent paint values that carry no palette signal. */
 function isTransparent(value: string): boolean {
 	return value === 'transparent' || value === 'rgba(0, 0, 0, 0)' || value === 'none' || value === 'currentcolor';
 }

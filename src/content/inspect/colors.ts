@@ -2,8 +2,8 @@
  * Page-wide color extractor.
  *
  * This is a page-scan inspector that reads the live dom directly and does not run the element
- * pipeline. It runs live, so the page must be loaded, reads document and window, and writes
- * nothing, a pure extraction with no side effects. The colors inspector lists every color the
+ * pipeline. It needs the page loaded, reads document and window, and writes nothing, a pure
+ * extraction. The colors inspector lists every color the
  * page paints, perceptually clustered so near-duplicate shades collapse into one swatch,
  * most-used first. Clustering is greedy in Oklab space, the perceptually uniform color model, so
  * visually identical colors that differ by a hex digit merge while distinct colors stay apart.

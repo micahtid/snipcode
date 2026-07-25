@@ -1,8 +1,8 @@
 /**
  * Computed-style render oracle for the minimizer.
  *
- * This runs in the minimize phase, the deletion and rewrite verifier used by every minimize
- * phase. It reads page.viewport from Captured to size the frame like the pasted-snip
+ * This is the deletion and rewrite verifier used by every minimize phase. It reads
+ * page.viewport from Captured to size the frame like the pasted-snip
  * environment, writing nothing and operating on a private iframe and the emitted stylesheet.
  *
  * The minimizer proposes a candidate edit to the emitted stylesheet, such

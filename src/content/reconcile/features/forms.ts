@@ -12,8 +12,7 @@
  * form-element spec surface expressed as a selector rather than a tag Set. It bakes
  * non-default appearance, -webkit-appearance, and accent-color onto matching clone
  * controls. It also mirrors the live value, checked, and selected state onto the clone
- * as attributes, so the rendered control matches the capture. It touches bakedStyles
- * and the clone only.
+ * as attributes, so the rendered control matches the capture.
  *
  * appearance: none is how authors replace native control chrome with custom styling. If
  * it is lost, the control snaps back to the os widget. Accent-color tints checkboxes,

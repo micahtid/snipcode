@@ -10,9 +10,8 @@
  * https://developer.mozilla.org/en-US/docs/Web/CSS/font-variation-settings, which also
  * covers font-feature-settings, font-optical-sizing, and font-stretch. It detects an
  * element whose computed value for one of the font-metric properties is non-default,
- * and otherwise early-returns per element. It bakes those computed font values onto the
- * matching clone element. It reads getComputedStyle of the live original and mutates
- * bakedStyles and the clone inline styles only.
+ * and otherwise early-returns per element. It reads getComputedStyle of the live
+ * original and bakes those computed font values onto the matching clone element.
  *
  * Variable-font axis settings and opentype feature settings are frequently applied by a
  * font's own @font-face or a high-level shorthand, and they do not appear as explicit

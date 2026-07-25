@@ -8,7 +8,7 @@
  * The reproduce phase emits whatever the engine computed, which for a
  * left-to-right, horizontal page is a mix of logical properties (margin-inline-start,
  * border-end-end-radius, inset-block) that a human writing that page would have spelled
- * physically as margin-left, border-bottom-right-radius, and top/bottom. Left as logical, four
+ * physically as margin-left, border-bottom-right-radius, and top and bottom. Left as logical, four
  * corner radii never fold, because border-radius is a physical shorthand. This rewrites the
  * logical properties to their physical equivalents, but only on the rules whose every matched
  * element is horizontal-tb and ltr, where the two are exactly equivalent. The normalize pass

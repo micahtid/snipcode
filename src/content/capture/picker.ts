@@ -16,7 +16,7 @@
  * wrapping containers unreachable. Moving the pointer out of the selection re-baselines to the
  * fresh leaf under the cursor.
  *
- * Multi-select (snip mode only, opt-in via the `multi` option) works as follows. Pressing shift turns the mode
+ * Multi-select (snip mode only, opt-in via the `multi` option). Pressing shift turns the mode
  * on, and it stays on with the key released, so every plain click then pins or unpins. Shift
  * is a switch rather than a modifier to hold, because shift plus wheel is chrome's
  * horizontal-scroll binding, so a mode that required shift to stay held would make the page
@@ -47,7 +47,7 @@ export interface PickerOptions {
 	onSelect: (element: Element, screenshot: string) => void;
 	/** Called when the user presses esc. */
 	onCancel: () => void;
-	/** Enable shift-to-pin multi-select. Snip mode only; assistive stays single-pick. */
+	/** Enable shift-to-pin multi-select. Snip mode only. Assistive stays single-pick. */
 	multi?: boolean;
 	/** Called with every pinned element, in pin order, once the user presses enter. */
 	onSelectMany?: (picks: Pick[]) => void;
@@ -344,7 +344,7 @@ export class ElementPicker {
 		// elementFromPoint is more reliable than e.target for nested/overlapped
 		// layouts, and our chrome is pointer-events:none so it is never returned.
 		const el = document.elementFromPoint(this.lastX, this.lastY);
-		if (!el || el === this.overlay || el === this.tooltip || this.guides.includes(el as HTMLDivElement)) {
+		if (!el || this.isOwnChrome(el)) {
 			return;
 		}
 		// The page root fills the viewport, so cutting a hole for it would erase the dim entirely.
@@ -614,7 +614,7 @@ export class ElementPicker {
 	private reacquire(): void {
 		if (!this.active || this.scrolling || this.capturing) return;
 		const el = document.elementFromPoint(this.lastX, this.lastY);
-		if (!el || el === this.overlay || el === this.tooltip || el === this.banner || this.guides.includes(el as HTMLDivElement)) return;
+		if (!el || this.isOwnChrome(el)) return;
 		if (isPageRoot(el)) return; // Never re-target the whole page, see trackPointer.
 		this.leaf = el;
 		this.current = el;
@@ -623,23 +623,40 @@ export class ElementPicker {
 		this.label(el, this.lastX, this.lastY);
 	}
 
+	/** True when a hit-test hit our own overlay chrome, never a snip target. */
+	private isOwnChrome(el: Element): boolean {
+		return el === this.overlay || el === this.tooltip || el === this.banner || this.guides.includes(el as HTMLDivElement);
+	}
+
+	/**
+	 * The element a click should act on, resolved from the click point directly so it stays
+	 * correct even mid-capture, when trackPointer is paused and this.current is stale. An active
+	 * climb still under the cursor wins.
+	 *
+	 * @returns the element to act on, or null when the point is on our chrome or the page root
+	 */
+	private clickTarget(): Element | null {
+		const el = document.elementFromPoint(this.lastX, this.lastY);
+		if (!el || this.isOwnChrome(el) || isPageRoot(el)) return null;
+		if (this.climbed && this.current && this.current.contains(el)) return this.current;
+		return el;
+	}
+
 	private readonly onClick = (e: MouseEvent): void => {
-		// Pointer moves are processed a frame late (see onMove), so a fast move-then-click could
-		// arrive before this.current caught up. Flush the pending resolution against the click
-		// point first, so the click always acts on the element actually under the cursor.
+		// Pointer moves are handled a frame late (see onMove), so cancel the pending move and let
+		// clickTarget resolve from the click point.
 		if (this.moveRaf !== null) {
 			cancelAnimationFrame(this.moveRaf);
 			this.moveRaf = null;
 		}
 		this.lastX = e.clientX;
 		this.lastY = e.clientY;
-		this.trackPointer();
-		if (!this.current) return;
+		const chosen = this.clickTarget();
+		if (!chosen) return;
 		// Swallow the click entirely so the host page never sees it.
 		e.preventDefault();
 		e.stopPropagation();
 		e.stopImmediatePropagation();
-		const chosen = this.current;
 		// In multi-select every click collects an element instead of snipping it. A shift-click
 		// gets there in one gesture too, for anyone who reaches for the modifier out of habit.
 		// The overlay stays live either way, so the user can go pick the next one.

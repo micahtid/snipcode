@@ -9,7 +9,7 @@
  *
  * The relevant spec is https://developer.mozilla.org/en-US/docs/Web/CSS/@property. It
  * detects a registered @property in the document whose name is a custom property the
- * snip uses, and otherwise early-returns when none match. It appends a <style> of the
+ * snip uses, and early-returns when none match. It appends a <style> of the
  * matching @property rules to the clone. It reads document.styleSheets, the in-memory
  * cssom. It touches the clone only.
  *

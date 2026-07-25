@@ -81,7 +81,7 @@ export interface MeasuredStateDecl {
 	/** The longhand or shorthand property name. */
 	property: string;
 	/** The concrete computed literal read under the forced state, already cascade- and
-	 * inheritance-resolved by the engine, so no var()/cascade work remains downstream. */
+	 * inheritance-resolved by the engine, so no var() or cascade work remains downstream. */
 	value: string;
 }
 
@@ -167,7 +167,7 @@ export type MessageType =
 
 /**
  * One-way, fire-and-forget signals between the side panel and the content script.
- * These are NOT members of `MessageType`. That union is only for the request/response
+ * These are NOT members of `MessageType`. That union is only for the request and response
  * broker `Envelope`. They carry no requestId and expect no Response. They live here,
  * exported once, so sender and receiver share the exact string and a single typo can
  * never silently drop the message.

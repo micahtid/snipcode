@@ -5,9 +5,9 @@
  * element pipeline phase. It reads nothing from the DOM and writes nothing, these are type
  * definitions. Each of the four inspectors, fonts, assets, colors, and schema, scans the whole
  * page and ships one result to the side panel. Defining the report records and the tagged
- * InspectResult union in one place is what lets the content script, the message ship, and the
+ * InspectResult union in one place lets the content script, the message ship, and the
  * panel views agree on a shape without importing each other. These are the v2-named, trimmed
- * equivalents of v1's FontInfo, AssetInfo, and color cluster. Only the fields a panel actually
+ * equivalents of v1's FontInfo, AssetInfo, and color cluster. Only the fields a panel
  * renders survive. v1's extractionTime, totalElements, and per-element debug lists are dropped.
  */
 

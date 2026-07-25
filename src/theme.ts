@@ -63,7 +63,7 @@ export const SURFACE = {
 	primaryHover: 'linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(51, 65, 85, 0.92) 100%)',
 	/** Field background for inputs, selects, and checkboxes. */
 	field: 'rgba(255, 255, 255, 0.7)',
-	/** Text and hairline border on the dark primary/split controls. */
+	/** Text and hairline border on the dark primary and split controls. */
 	onDarkText: 'rgba(255, 255, 255, 0.95)',
 	onDarkBorder: 'rgba(255, 255, 255, 0.1)',
 	/** Secondary light button text. */

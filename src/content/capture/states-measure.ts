@@ -27,9 +27,9 @@
  * reconcile can re-anchor it as `[marker]:hover::after { ... }` over the resting pseudo the
  * pseudo pass already ships.
  *
- * The forcing is privileged and lives here, beside capture/cdp.ts's other CDP paths, for the
- * same reason, since only the background can attach the debugger, because chrome.debugger is
- * background-only, and only the live capture phase has the element, its ancestor chain, and
+ * The forcing is privileged and lives here, beside capture/cdp.ts's other CDP paths, because
+ * only the background can attach the debugger (chrome.debugger is background-only), and only
+ * the live capture phase has the element, its ancestor chain, and
  * getComputedStyle. It soft-fails exactly like the inherited-chain capture, so if the debugger
  * is busy, such as when devtools is open, the snip proceeds and reconcile falls back to copying rules.
  *
@@ -50,8 +50,8 @@ const SHIM_TEXT = '*, *::before, *::after { transition: none !important; animati
 
 /**
  * The work budget is bounded, since measurement makes a CDP round-trip per trigger-and-state pair and reads computed styles
- * across every scoped element, so both scale with the snip. Beyond these bounds, such as a very
- * large snip like a whole site nav with hundreds of hover rules, measurement degrades to the copy
+ * across every scoped element, so both scale with the snip. Beyond these bounds, such as a whole
+ * site nav with hundreds of hover rules, measurement degrades to the copy
  * path, the prior behavior, rather than risk timing out. The bounds are counts, so the
  * measure-or-copy decision is a deterministic function of the page.
  */

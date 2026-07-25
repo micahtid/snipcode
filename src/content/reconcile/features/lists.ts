@@ -3,8 +3,7 @@
  *
  * This is a reconcile-phase feature handler. It reads root and clone from Captured via
  * bakeNonDefaultProps and writes bakedStyles and clone, the list and counter
- * properties. It extends the "ship what renders" approach to list and counter
- * properties.
+ * properties. It extends the "ship what renders" approach.
  *
  * The relevant spec is https://developer.mozilla.org/en-US/docs/Web/CSS/list-style,
  * which also covers counter-reset and counter-increment, which drive ::marker via

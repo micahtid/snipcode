@@ -13,7 +13,7 @@
  * tailwind's arbitrary-value syntax `[prop:value]` for everything else, which
  * guarantees full coverage and exact fidelity in a tailwind environment without
  * an exhaustive mapping table. Ported from v1 css-to-tailwind.ts and
- * tailwind-extractor.ts, rewritten, covering the conversion mappings and arbitrary-value handling.
+ * tailwind-extractor.ts, rewritten.
  */
 import type { Captured } from '../types';
 import { snapValue } from './snap';

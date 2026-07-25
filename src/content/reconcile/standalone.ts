@@ -150,7 +150,7 @@ function isReplacedElement(el: Element): boolean {
 	return REPLACED_TAGS.has(el.tagName.toLowerCase());
 }
 
-/** Cap on how many example samples each discrepancy report keeps, to bound its size. */
+/** Cap on how many samples each discrepancy report keeps, to bound its size. */
 const MAX_SAMPLES = 40;
 /** How many of the most frequent discrepancy properties a report lists, most-frequent first. */
 const TOP_PROPS = 20;

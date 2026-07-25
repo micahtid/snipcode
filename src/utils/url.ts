@@ -1,5 +1,5 @@
 /**
- * utils/url.ts absolutizes a possibly-relative url.
+ * Absolutizes a possibly-relative url.
  *
  * This is not part of the pipeline. It is a cross-cutting utility.
  *

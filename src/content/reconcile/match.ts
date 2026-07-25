@@ -4,8 +4,7 @@
  * This runs in the reconcile phase. It reads root, foundationRules, and componentRules
  * from Captured, writes nothing directly, and returns the authored cascade for bake.ts.
  *
- * Its principle is simple. It provides the authored side of the per-element
- * authored-vs-computed comparison.
+ * It provides the authored side of the per-element authored-vs-computed comparison.
  *
  * It exists because a captured element's appearance is the sum of every rule that
  * matches it, resolved by the cascade. This module recreates that cascade from

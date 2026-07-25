@@ -3,9 +3,8 @@
  *
  * This is cross-cutting, used by the polish phase and the inspect ai pass. Content scripts
  * are bound by the host page's csp and cannot reach provider hosts, so every byok llm call is
- * delegated to the background worker over an LLM_REQUEST message. Both the polish phase and
- * the inspect ai pass send that exact request and read back the same { text, usage }, or an
- * error. This is that one transport. Each caller parses the reply into its own shape and
+ * delegated to the background worker over an LLM_REQUEST message. Both send that exact
+ * request and read back the same { text, usage }, or an error. This is that one transport. Each caller parses the reply into its own shape and
  * decides whether to skip or warn.
  */
 import type { Provider, TokenUsage } from './types';

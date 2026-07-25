@@ -56,7 +56,7 @@ const BASE_RESET = 'html, body { margin: 0; padding: 0; }';
  * Composes a single self-contained html document from the markup and its stylesheet.
  * Emits a valid standalone document, with doctype, charset, and head and body, so the artifact does
  * not depend on the origin and renders identically wherever it is pasted. This is what
- * renders standalone, and what the grader screenshots.
+ * the grader screenshots.
  *
  * @param html - the inline-styled markup
  * @param css - the accompanying @font-face / @keyframes block, which may be empty

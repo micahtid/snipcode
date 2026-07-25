@@ -63,7 +63,7 @@ const styles = {
 	},
 	// Horizontal inset matches the 14px the scroll body uses, so the nav icons line up with the
 	// banner and code block below them. Vertical padding is kept tight so the icons do not sit
-	// far above the content, which would read as a lopsided gap over the first row below.
+	// far above the content, which would read as a lopsided gap.
 	nav: { display: 'flex', gap: '6px', padding: '6px 14px', borderBottom: `1px solid ${SURFACE.border}` },
 	main: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' },
 	tokens: { marginTop: '8px', fontSize: '11px', fontWeight: 500, color: COLORS.slate500 },

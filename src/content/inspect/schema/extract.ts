@@ -2,9 +2,8 @@
  * The page-schema extractor.
  *
  * This is a page-scan inspector that reads the live dom directly and does not run the element
- * pipeline. It runs live, so the whole page must be loaded, reads document and window, and writes
- * nothing, a pure extraction that returns a PageSchema. The schema inspector turns a whole page
- * into a compressed design-system schema. It walks the visible dom, stratified by section so a
+ * pipeline. The whole page must be loaded. It reads document and window and writes nothing, a pure
+ * extraction that returns a PageSchema. It walks the visible dom, stratified by section so a
  * long page samples evenly, collects the color, font, spacing, radius, and shadow tokens, dedupes
  * elements into a style map and a structure tree, lifts interactive-state rules from the readable
  * stylesheets, and detects section blueprints and the button, card, and nav component blueprints
@@ -39,7 +38,7 @@ interface WalkedElement {
 const COLOR_PROPS = ['color', 'background-color', 'border-color', 'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color'];
 const SPACING_PROPS = ['padding-top', 'padding-right', 'padding-bottom', 'padding-left', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left', 'gap'];
 
-/** A button element or a link styled as a button. This is shared across the button-detection passes. */
+/** A button element or a link styled as a button, shared across the button-detection passes. */
 const BUTTON_SELECTOR = 'button, a[class*="btn"], a[class*="button"]';
 
 /** Whether a normalized color value is fully transparent, painting nothing. */

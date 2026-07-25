@@ -25,7 +25,6 @@
  * the replacement <img> so it lays out where the svg did. An svg taken out of normal
  * flow by a non-static position or a transform cannot be reproduced by an in-flow <img>,
  * so it is left inline. The same goes for a sprite whose <use> points outside itself.
- * What lifts is faithful. What would not stays put.
  */
 import type { AssetFile } from '../types';
 

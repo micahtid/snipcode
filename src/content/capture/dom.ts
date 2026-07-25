@@ -12,9 +12,8 @@
 import type { Captured } from '../types';
 
 /**
- * Common lazy-loading attribute names, in priority order. These are html
- * attribute names for a universal lazy-img convention, normalized at capture so
- * output is portable.
+ * Common lazy-loading attribute names, in priority order, from a universal lazy-img
+ * convention, normalized at capture so output is portable.
  */
 const LAZY_SRC_ATTRS = ['data-src', 'data-lazy-src', 'data-original', 'data-srcset'] as const;
 
@@ -45,7 +44,7 @@ export function cloneElement(root: Element): Element {
 	return clone;
 }
 
-/** True for the empty/spacer srcs lazy-loaders use before swapping in the real one. */
+/** True for the empty or spacer srcs lazy-loaders use before swapping in the real one. */
 function isPlaceholderSrc(src: string): boolean {
 	return !src || src.startsWith('data:image') || src.includes('1x1') || src.includes('placeholder');
 }
@@ -53,7 +52,7 @@ function isPlaceholderSrc(src: string): boolean {
 /**
  * Builds the element metadata block.
  *
- * Both modes need this. The snip mode uses the tag/box, and the assistive mode
+ * Both modes need this. The snip mode uses the tag and box, and the assistive mode
  * emits the whole block as json. It emits two selectors, `selector`, the shortest
  * unique one, and `robustSelector`, which prefers stable data-attributes or ids
  * over class hashes, so a downstream agent can re-find the element even if class
@@ -137,7 +136,7 @@ function robustSelector(el: Element): string {
 			}
 		}
 	}
-	// An id without a long hex/hash tail reads as author-stable, not generated.
+	// An id without a long hex or hash tail reads as author-stable, not generated.
 	if (el.id && !/[0-9a-f]{6,}/i.test(el.id) && isUnique(`#${cssEscape(el.id)}`, el)) {
 		return `#${cssEscape(el.id)}`;
 	}
@@ -192,7 +191,7 @@ function isUnique(selector: string, el: Element): boolean {
 	}
 }
 
-/** Escape a class/id token for use in a css selector. */
+/** Escape a class or id token for use in a css selector. */
 function cssEscape(value: string): string {
 	// CSS.escape is standard in mv3 browsers, but guard anyway for headless contexts.
 	return typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(value) : value.replace(/([^\w-])/g, '\\$1');

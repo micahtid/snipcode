@@ -6,7 +6,7 @@
  * namely @font-face, the cloud-backdrop geometry, and, most importantly, interactive
  * pseudo-states like :hover, :active, and :disabled, plus ::-webkit-scrollbar and
  * ::placeholder. Inline styles also win the cascade over stylesheet rules, so a button whose
- * base background is inline can never show a :hover background. The fix used here is that
+ * base background is inline can never show a :hover background. So
  * interactive controls, such as buttons, inputs, and the mode toggle, are styled entirely by
  * the classes below so their pseudo-states work, while structural layout stays inline. App.tsx
  * injects this once on mount, keeping index.html bare, so the bundle owns all markup. Values
@@ -244,7 +244,7 @@ body {
 }
 .sc-history-hit:active { transform: scale(0.98); }
 /* The section heading above each history group, with its live count. The top margin is
-   what separates Saved from History: cards carry a 4px bottom margin, and adjacent margins
+   what separates Saved from History. Cards carry a 4px bottom margin, and adjacent margins
    collapse, so the larger of the two wins and the break is this value. It has to stay well
    clear of the card gap or the sections stop reading as sections. The first heading zeroes
    it so the list does not start pushed down. */
@@ -493,7 +493,7 @@ body {
 /**
  * Injects {@link GLOBAL_CSS} once into the document head. It is idempotent, so a second
  * call, such as a hot-reload or a re-mount, finds the existing style by id and
- * no-ops, and the rules are never duplicated.
+ * no-ops.
  */
 export function injectGlobalCss(): void {
 	if (document.getElementById(STYLE_ID)) return;

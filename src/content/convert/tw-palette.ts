@@ -10,7 +10,7 @@
  * converter must fall back to an arbitrary value (bg-[#4287f5]) so brand colors
  * are not silently drifted. Matching uses ciede2000, a perceptual color distance,
  * with tight thresholds. <1 is exact, 1-2 is an acceptable nudge, >=2 forces an
- * arbitrary value. Ported from v1 tailwind-palette.ts, rewritten, full module.
+ * arbitrary value. Ported from v1 tailwind-palette.ts, rewritten.
  *
  * The palette table below is the tailwind v3 vocabulary, a finite output-format
  * data table, not a hardcoded list of styling properties or tags, so the
@@ -49,7 +49,7 @@ const TAILWIND_COLORS: Record<string, string> = {
 const DELTA_E_EXACT = 1;
 const DELTA_E_CLOSE = 2;
 
-/** Lazily-computed lab values for every palette entry, computed once for performance. */
+/** Lab values for every palette entry, computed lazily once for performance. */
 let labCache: Array<{ name: string; lab: [number, number, number] }> | null = null;
 
 /** The matched palette token plus whether it is perceptually exact. */

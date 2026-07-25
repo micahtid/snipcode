@@ -6,8 +6,8 @@
  * Why this exists. Several panel views, such as the result viewer, the schema view, and the
  * snippet exporter, save a blob or data url the same way, via a transient anchor click, and
  * two of them additionally zip a set of files first. This was duplicated inline in each, so
- * the anchor click, the object-url lifecycle, and the zip build all live here once. Note this
- * is for same-origin blob and data downloads only. A cross-origin asset url is opened in a new tab instead, using a
+ * the anchor click, the object-url lifecycle, and the zip build all live here once. This is
+ * for same-origin blob and data downloads only. A cross-origin asset url is opened in a new tab instead, using a
  * deliberately different anchor in components/inspect/AssetGrid.tsx, so those are not routed
  * through here.
  */

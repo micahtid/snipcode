@@ -1,7 +1,7 @@
 /**
  * The optional byok ai pass for colors and schema.
  *
- * This is the optional byok finishing pass in the inspect phase, page-scoped. It reads nothing
+ * This is the finishing pass in the inspect phase, page-scoped. It reads nothing
  * from the DOM, operating on the already-extracted reports, and writes nothing, returning
  * enhanced reports. It is orchestration. Two inspectors gain an optional ai pass. Colors asks the
  * user's own llm to assign a semantic role to each extracted color. Schema asks it to synthesize
@@ -10,8 +10,7 @@
  * usage. The broker makes the call because content scripts cannot reach provider hosts under the
  * page csp. A missing key is a silent no-op that returns the raw input unchanged. A configured-key
  * failure returns the raw input plus a warning so the panel can say why no roles or synthesis
- * landed. There is no double-ship and no state machine. It is the same shape polish already
- * proved.
+ * landed. There is no double-ship and no state machine.
  */
 import type { Provider, TokenUsage } from '../types';
 import { requestLlm, NO_KEY } from '../llm';
@@ -72,7 +71,7 @@ export async function enhanceColors(
 /**
  * Synthesizes the raw page schema into a design-system json via the byok llm.
  * Returns the raw schema json unchanged when no key is configured, or when the
- * reply is not parseable json, in which case it degrades to the raw input with a warning.
+ * reply is not parseable json, adding a warning in that case.
  *
  * @param schemaJson - the optimized page schema, serialized as json
  * @param provider - the active byok provider

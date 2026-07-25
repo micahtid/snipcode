@@ -305,7 +305,7 @@ function declarationLines(block: string, depth: number): string {
  * @font-face and @keyframes, the polish :hover and :focus-visible rules, and comma and descendant
  * selectors, so a class's resting style is never confused with a state rule. The html
  * format, which has no class rules, yields an empty map and falls back to inline styles. The
- * nested bem-scss output never matches the flat pattern and simply yields no info,
+ * nested bem-scss output never matches the flat pattern and yields no info,
  * which is safe, just less indented. The flat bem-css default does match.
  *
  * @param css - the emitted stylesheet

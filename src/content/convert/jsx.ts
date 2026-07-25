@@ -11,8 +11,7 @@
  * for jsx-tailwind or the bem-css emitter for jsx-css, then rewrites their html into
  * jsx and wraps it in a component. Ported from v1 html-to-jsx.ts, rewritten,
  * with its full attribute transform table. Jsx lets any childless element self-close,
- * so there is no need to enumerate html void elements, which also avoids
- * hardcoding a tag list.
+ * so there is no need to enumerate html void elements or hardcode a tag list.
  */
 import type { Captured } from '../types';
 import { emitTailwind } from './tailwind';

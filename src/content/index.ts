@@ -2,8 +2,8 @@
  * Pipeline orchestrator and content-script entry point.
  *
  * Chrome injects exactly one content script per page, and this file is that script. It
- * constructs the Captured object in the capture phase and reads it downstream, owning the
- * whole lifecycle. It owns the message protocol and runs the phases in order.
+ * constructs the Captured object in the capture phase and reads it downstream. It owns the
+ * message protocol and runs the phases in order.
  *
  * The order is capture (content/capture/*, the picker, dom clone, and stylesheet discovery),
  * then reconcile (content/reconcile/*), then resolve (content/resolve/*), then convert

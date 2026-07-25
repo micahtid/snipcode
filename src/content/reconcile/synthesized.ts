@@ -10,9 +10,8 @@
  * needs the identical plumbing, a marker re-anchored rule appended to a <style> on
  * the clone, later lifted into the document head by convert/format.ts. Rather than
  * have each handler create and manage its own <style> (the v1-era copy-paste), they
- * share one carrier here. A single appended <style> collects every synthesized rule,
- * which also gives the resolve phase one place to find and rewrite those rules'
- * url() and var() references (see resolve/inline.ts and resolve/vars.ts).
+ * share one carrier here, which also gives the resolve phase one place to find and
+ * rewrite those rules' url() and var() references (see resolve/inline.ts and resolve/vars.ts).
  *
  * The carrier is tagged with a data-* attribute so the resolve passes can locate it
  * and convert/format.ts strips it on lift. It never reaches the emitted markup.

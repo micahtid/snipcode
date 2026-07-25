@@ -6,9 +6,8 @@
  * marking elements and appending a <style> of state rules, and warnings. It extends the
  * "ship what renders" approach to the interactive states a static snapshot drops, such
  * as a button that lightens on hover, a link that underlines, and an input that rings on
- * focus. The resting cascade discards them because the element is not hovered or focused
- * at capture time, since el.matches('.btn:hover') is false at rest, so each property
- * flattens to its resting value. This handler re-emits them so they reproduce in the
+ * focus. The resting cascade discards them because el.matches('.btn:hover') is false at rest,
+ * so each property flattens to its resting value. This handler re-emits them so they reproduce in the
  * standalone artifact.
  *
  * There are two sources of truth, and this handler prefers ground truth. When the
@@ -140,7 +139,7 @@ function applyMeasured(captured: Captured, measuredStates: MeasuredState[]): Cap
 
 	// Group declarations by the selector they re-anchor to. Distinct trigger, state, and affected
 	// triples produce distinct marker selectors, so a group is normally one triple. The merge is
-	// just the natural home for its denoised declarations.
+	// the natural home for its denoised declarations.
 	const groups = new Map<string, Map<string, string>>();
 	// The element-box props each affected clone pins across all its states, plus its live original,
 	// so one coherent resting transition can be emitted per element below.
@@ -313,7 +312,7 @@ function baseIsAuto(property: string, resting: string | undefined): boolean {
  * restate the element's resting baked value, cannot animate from an `auto` base, have no effect
  * in this element's context, or only track the forced `color`, so the emitted rule stays
  * proportional to the real change. A later unit for the same selector overwrites an earlier
- * property, but distinct triples carry distinct selectors, so this is just the per-selector
+ * property, but distinct triples carry distinct selectors, so this is the per-selector
  * accumulation point.
  *
  * @param decls - the measured declarations for this affected element

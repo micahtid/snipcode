@@ -39,8 +39,7 @@ const DROP = '';
  * @param css - the stylesheet text to prune
  * @param captured - the snip, whose baked styles are read for font, animation, and var usage
  * @param markup - the emitted markup selectors are matched against, falling back to the
- *   inline-styled clone when absent. The html path passes none and matches the clone,
- *   its established behavior, since it ships only inline styles plus at-rules
+ *   inline-styled clone when absent
  * @returns the cleaned stylesheet text
  */
 export function cleanCss(css: string, captured: Captured, markup?: string): string {

@@ -1,9 +1,8 @@
 /**
  * Website-builder gate.
  *
- * This is the final capture step, and it refuses unsupported pages. It runs before Captured
- * exists, reading the live picked element, and gates the pipeline before Captured is built, so
- * it writes nothing. Framer, wix, webflow, elementor, and readymag render runtime-dependent,
+ * This is the final capture step, and it refuses unsupported pages. It reads the live picked
+ * element and gates the pipeline before Captured is built, so it writes nothing. Framer, wix, webflow, elementor, and readymag render runtime-dependent,
  * non-portable markup, such as scale-to-fit transforms, hashed class soups, and sprite refs to
  * document-root <symbol>s. Snipping them produces broken output, so v2 refuses with a static
  * "unsupported" message instead of degrading silently. Detection is purely structural, using
@@ -11,7 +10,7 @@
  * subtree walk. Ported, rewritten, from v1 vision/builder-detection.ts. The v1 version routed
  * to a vision model, but v2 drops that path and blocks.
  *
- * Note that the runtime Set in collectSampleClassNames dedups sampled class names. It is not a
+ * The runtime Set in collectSampleClassNames dedups sampled class names. It is not a
  * hardcoded tag, role, or property enumeration.
  */
 

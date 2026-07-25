@@ -175,8 +175,8 @@ function walkRules(rules: CSSRuleList, ctx: RuleContext, out: SheetDiscovery, so
 		} else if (isGroupingRule(rule)) {
 			// @layer {... } and @container... {... }. These are recent rule
 			// types not always present in the dom lib, so detect structurally and read
-			// their identifying field defensively. The layers/units handlers refine
-			// this later. Here we just preserve the context.
+			// their identifying field defensively. The layers and units handlers refine
+			// this later. Here we preserve the context.
 			const layer = readField(rule, 'name');
 			const containerQuery = readField(rule, 'conditionText');
 			walkRules(rule.cssRules, {
@@ -265,7 +265,7 @@ function readField(rule: CSSRule, field: string): string {
 /**
  * Computes selector specificity as a*10000 + b*100 + c.
  *
- * A = id count, b = class/attribute/pseudo-class count, c = element/
+ * A = id count, b = class, attribute, and pseudo-class count, c = element and
  * pseudo-element count. This is the classic three-tuple flattened to one number,
  * good enough for cascade ordering in the reconcile phase. Pseudo-elements
  * (::before) count toward c, pseudo-classes (:hover) toward b.
