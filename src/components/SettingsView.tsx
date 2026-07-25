@@ -1,18 +1,12 @@
 /**
- * components/SettingsView.tsx: byok + preferences settings tab
+ * The byok and preferences settings tab.
  *
- * Pipeline position: n/a. Configures polish + assistive delivery.
- * Reads from Captured: n/a
- * Writes to Captured: n/a
- *
- * Principles applied: none. Ui only.
- *
- * Why this exists: this is the settings tab. It holds a provider dropdown, a
- * password-masked api key, a model override, per-field verify buttons, a default
- * output format, assistive delivery, and a webhook url. Everything persists to
- * chrome.storage.local via utils/storage, never sync. The key is validated against
- * the live provider through utils/byok and never logged. If no key is configured,
- * polish silently no-ops and the rest of the pipeline still produces output.
+ * It holds a provider dropdown, a password-masked api key, a model override, per-field verify
+ * buttons, a default output format, assistive delivery, and a webhook url, and it configures
+ * both polish and assistive delivery. Everything persists to chrome.storage.local via
+ * utils/storage, never sync. The key is validated against the live provider through utils/byok
+ * and never logged. If no key is configured, polish silently no-ops and the rest of the
+ * pipeline still produces output.
  */
 import { useEffect, useState } from 'react';
 import { Check, ChevronDown, Eye, EyeOff, ShieldCheck } from 'lucide-react';
@@ -100,7 +94,7 @@ export function SettingsView() {
 	const [showKey, setShowKey] = useState(false);
 	const [keyFocused, setKeyFocused] = useState(false);
 
-	// Load prefs + the active provider's key on mount.
+	// Load prefs and the active provider's key on mount.
 	useEffect(() => {
 		void (async () => {
 			const p = await getPrefs();
@@ -151,7 +145,7 @@ export function SettingsView() {
 				/>
 			</div>
 
-			{/* Each field has its own verify button, and both run the same key+model validation. */}
+			{/* Each field has its own verify button, and both run the same key and model validation. */}
 			<div style={styles.field}>
 				<label style={styles.label}>API Key (Local)</label>
 				<div style={styles.inputRow}>
@@ -160,7 +154,7 @@ export function SettingsView() {
 							className="sc-input"
 							type={showKey ? 'text' : 'password'}
 							value={key}
-							placeholder="Paste key"
+							placeholder="Paste Key"
 							onChange={(e) => setKeyState(e.target.value)}
 							onFocus={() => setKeyFocused(true)}
 							onBlur={() => {

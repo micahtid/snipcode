@@ -1,17 +1,17 @@
 /**
- * minimize/oracle.ts: computed-style render oracle for the minimizer
+ * Computed-style render oracle for the minimizer.
  *
- * Pipeline position: minimize, the deletion/rewrite verifier used by every minimize phase
- * Reads from Captured: page.viewport, to size the frame like the pasted-snip environment
- * Writes to Captured: nothing. It operates on a private iframe and the emitted stylesheet.
+ * This is the deletion and rewrite verifier used by every minimize phase. It reads
+ * page.viewport from Captured to size the frame like the pasted-snip
+ * environment, writing nothing and operating on a private iframe and the emitted stylesheet.
  *
- * Why this exists: the minimizer proposes a candidate edit to the emitted stylesheet, such
+ * The minimizer proposes a candidate edit to the emitted stylesheet, such
  * as deleting a declaration, folding a shorthand, or hoisting a rule, and needs a fast,
  * conservative way to decide whether that edit changed the render. This module is that
  * decision. It mounts the emitted markup plus its stylesheet in a hidden, viewport-sized
  * iframe carrying only the ua stylesheet, the same isolated environment
  * reconcile/standalone.ts validates against. It snapshots getComputedStyle for every element
- * and its ::before/::after, then after a candidate edit re-reads and compares. Equal
+ * and its ::before and ::after, then after a candidate edit re-reads and compares. Equal
  * computed styles on an unchanged dom imply an identical render, so accepting only edits
  * that leave every computed longhand unchanged is strictly conservative. It can keep a
  * declaration that was in fact dead, but it can never delete one that was load-bearing.
@@ -32,10 +32,10 @@
 import type { Captured } from '../types';
 import { createSizedFrame } from '../reconcile/standalone';
 
-/** One computed-style target: an element box, or one of its generated pseudo boxes. */
+/** One computed-style target, an element box, or one of its generated pseudo boxes. */
 interface Target {
 	el: Element;
-	/** '' for the element box, '::before'/'::after' for a generated box. */
+	/** '' for the element box, '::before' or '::after' for a generated box. */
 	pseudo: string;
 }
 
@@ -100,7 +100,7 @@ export async function createRenderOracle(captured: Captured, css: string, markup
 		sized.doc.body.innerHTML = markup;
 		// Neutralize motion so no computed value is time-dependent. A running animation or a
 		// transition fired by a candidate removal would otherwise make getComputedStyle return
-		// a mid-flight value on each read and defeat the before/after comparison, silently
+		// a mid-flight value on each read and defeat the before and after comparison, silently
 		// accepting a removal whose effect is still animating in. This frozen state is the
 		// oracle's own and is never part of the serialized output. Motion declarations survive
 		// because prune.ts holds them out of removal.
@@ -305,7 +305,7 @@ export async function withOracle(
  * The prop indices whose value paints nothing in the reference render, so a removal that
  * only changes them is render-neutral even though the computed value differs. This is the
  * paint-relevance relaxation that closes the gap between the strict computed-style
- * comparison and what actually paints:
+ * comparison and what actually paints.
  *
  * - A border side with zero width paints no line, so its color and style are irrelevant.
  * - An outline with style none paints nothing, so its color and width are irrelevant.
@@ -324,7 +324,7 @@ export async function withOracle(
  * - a column rule of style none paints no rule between columns, so its color and width are
  *   irrelevant, the same shape as the outline relaxation.
  * - -webkit-tap-highlight-color paints only the flash on a mobile tap, never a resting or hover
- *   pixel, so it is skipped unconditionally. This is the one deliberate trade in the set: a tap
+ *   pixel, so it is skipped unconditionally. This is the one deliberate trade in the set. A tap
  *   flash may differ from the source site, accepted here explicitly rather than slipped through.
  *
  * Each painting relaxation is judged from the reference values alone. A removal that instead

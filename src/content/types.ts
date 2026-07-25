@@ -1,22 +1,15 @@
 /**
- * content/types.ts: the shared contracts that bind every pipeline phase
+ * The shared contracts that bind every pipeline phase.
  *
- * Pipeline position: spans every phase, the type every phase reads/writes
- * Reads from Captured: n/a, it defines it
- * Writes to Captured: n/a, it defines it
+ * The entire extension is a pipeline that threads one mutable object (`Captured`) through
+ * five phases. Defining that object, plus the message envelope and the storage schemas, in
+ * one place is what lets the phases stay decoupled. Each phase only needs to know the shape,
+ * not the other phases. These definitions are the canonical contract and must not drift,
+ * because deviations break inter-module assumptions.
  *
- * Principles applied: none, type definitions only.
- *
- * It exists because the entire extension is a pipeline that threads one mutable
- * object (`Captured`) through five phases. Defining that object, plus the
- * message envelope and the storage schemas, in one place is what lets the phases
- * stay decoupled. Each phase only needs to know the shape, not the other phases.
- * These definitions are the canonical contract and must not drift, because
- * deviations break inter-module assumptions.
- *
- * Feature handlers (src/content/reconcile/features/*) may extend `Captured` via
- * typescript module augmentation in a paired `<module>.d.ts`, but only with a
- * header comment declaring which phase reads the new field.
+ * Feature handlers (src/content/reconcile/features/*) may extend `Captured` via typescript
+ * module augmentation in a paired `<module>.d.ts`, but only with a header comment declaring
+ * which phase reads the new field.
  */
 
 // ---------------------------------------------------------------------------
@@ -51,25 +44,25 @@ export interface Captured {
 	// Captured pixels
 	screenshot: string; // "Data:image/png;base64,..."
 
-	// Dom: only valid during capture + reconcile phases, serialized at html emit
+	// Dom, only valid during capture and reconcile phases, serialized at html emit
 	root: Element; // Original element reference, live dom
 	clone: Element; // Detached working copy that bake.ts mutates
 
 	// Css
 	stylesheets: Stylesheet[];
-	foundationRules: CssRule[]; // Broadly-scoped rules: body, html, *, etc
+	foundationRules: CssRule[]; // Broadly-scoped rules such as body, html, and *
 	componentRules: CssRule[]; // Element-scoped rules
 	variables: CssVariable[];
 	fonts: FontFace[];
 	keyframes: Keyframes[];
 
-	// Accessibility / inaccessibility notes: warnings only, never block
+	// Accessibility and inaccessibility notes, warnings only, never block
 	inaccessible: {
 		crossOriginStylesheets: string[]; // Hrefs we couldn't read
 		closedShadowRoots: number; // Count of cdp-pierce failures
 	};
 
-	// Reconciliation working state: populated by bake.ts, consumed by emit
+	// Reconciliation working state, populated by bake.ts, consumed by emit
 	bakedStyles: Map<Element, Map<string, string>>;
 
 	// Interactive states measured by forcing them live. The capture phase writes via
@@ -79,7 +72,7 @@ export interface Captured {
 	// no in-subtree state effect.
 	measuredStates: MeasuredState[] | null;
 
-	// Warnings accumulated across phases: never throw, always append
+	// Warnings accumulated across phases, never throw, always append
 	warnings: string[];
 }
 
@@ -88,7 +81,7 @@ export interface MeasuredStateDecl {
 	/** The longhand or shorthand property name. */
 	property: string;
 	/** The concrete computed literal read under the forced state, already cascade- and
-	 * inheritance-resolved by the engine, so no var()/cascade work remains downstream. */
+	 * inheritance-resolved by the engine, so no var() or cascade work remains downstream. */
 	value: string;
 }
 
@@ -96,8 +89,8 @@ export interface MeasuredStateDecl {
 export interface MeasuredAffected {
 	/** The original live element. Reconcile maps it to its clone via pairedSubtrees. */
 	element: Element;
-	/** The layer the delta lives on: '' for the element box, '::before'/'::after' for a generated
-	 * box whose own computed style changed, such as a glow/underline/reveal a pseudo-element carries. */
+	/** The layer the delta lives on, '' for the element box, '::before' or '::after' for a generated
+	 * box whose own computed style changed, such as a glow, underline, or reveal a pseudo-element carries. */
 	pseudoElement?: string;
 	/** The properties whose computed value differs from rest under the forced state. */
 	decls: MeasuredStateDecl[];
@@ -105,7 +98,7 @@ export interface MeasuredAffected {
 
 /** One forced activation of a trigger in an interactive state, and everything it restyled. */
 export interface MeasuredState {
-	/** The original element whose state was forced: the bearer of the dynamic pseudo. */
+	/** The original element whose state was forced, the bearer of the dynamic pseudo. */
 	trigger: Element;
 	/** The dynamic pseudos forced together, colon form, e.g. `[':hover']` or `[':focus-visible']`. */
 	states: string[];
@@ -124,7 +117,7 @@ export interface Stylesheet {
 export interface CssRule {
 	selector: string;
 	properties: Map<string, string>;
-	specificity: number; // Standard formula: a*10000 + b*100 + c
+	specificity: number; // Standard formula, a*10000 + b*100 + c
 	mediaQuery?: string; // Populated if rule lives inside @media
 	containerQuery?: string; // Populated if inside @container
 	layer?: string; // Populated if inside @layer
@@ -158,7 +151,7 @@ export interface Keyframes {
 // ---------------------------------------------------------------------------
 
 /**
- * The type discriminator for every request/response broker message, the `type`
+ * The type discriminator for every request and response broker message, the `type`
  * field of `Envelope`, each handled by the background service worker.
  */
 export type MessageType =
@@ -174,7 +167,7 @@ export type MessageType =
 
 /**
  * One-way, fire-and-forget signals between the side panel and the content script.
- * These are NOT members of `MessageType`. That union is only for the request/response
+ * These are NOT members of `MessageType`. That union is only for the request and response
  * broker `Envelope`. They carry no requestId and expect no Response. They live here,
  * exported once, so sender and receiver share the exact string and a single typo can
  * never silently drop the message.
@@ -186,10 +179,22 @@ export const INSPECT_RESULT = 'INSPECT_RESULT';
 export const START_PICKER = 'SNIPCODE_START_PICKER';
 /** The panel asks the content script to tear the picker overlay down on panel-side esc. */
 export const CANCEL_PICKER = 'SNIPCODE_CANCEL_PICKER';
+/** The panel asks the content script to toggle multi-select, for shift pressed with panel focus. */
+export const TOGGLE_MULTI = 'SNIPCODE_TOGGLE_MULTI';
 /** The content script tells the panel an element was picked, so the pipeline is now running. */
 export const PICKER_SELECTED = 'SNIPCODE_PICKER_SELECTED';
+/** The content script tells the panel the picker was cancelled page-side, so it can reset. */
+export const PICKER_CANCELLED = 'SNIPCODE_PICKER_CANCELLED';
 /** Carries a finished snip result from the content script back to the panel. */
 export const SNIP_RESULT = 'SNIP_RESULT';
+/** Reports batch progress during a multi-select snip, so the panel label can count elements. */
+export const SNIP_PROGRESS = 'SNIPCODE_SNIP_PROGRESS';
+
+/** The SNIP_PROGRESS payload, how many elements of a multi-select batch are already finished. */
+export interface BatchProgress {
+	done: number;
+	total: number;
+}
 
 /** The request envelope shared by all messages. requestId correlates responses. */
 export interface Envelope<TPayload, TResult = unknown> {
@@ -229,16 +234,48 @@ export type Provider = 'openrouter' | 'anthropic' | 'openai' | 'google';
 export type OutputFormat = 'tailwind' | 'bem-css' | 'bem-scss' | 'jsx-tailwind' | 'jsx-css' | 'vue' | 'html';
 
 /**
- * One file in a split snip result: the index.html document plus the inline svgs,
- * data-uri images, and @font-face fonts lifted out into their own referenced files
- * (convert/assets.ts). Text files (html/svg/json) carry `text`. Binary files (images and
- * fonts) carry the original `dataUrl` so the panel can render or download them.
+ * One file in a split snip result, the index.html document plus its stylesheet, the inline
+ * svgs, the data-uri images, and the @font-face fonts lifted out into their own referenced
+ * files (convert/assets.ts). A format that never goes through that split, jsx or vue, is one
+ * file named for the format. Text files carry `text`. Binary files (images and fonts) carry
+ * the original `dataUrl` so the panel can render or download them.
  */
 export interface AssetFile {
-	name: string; // 'index.html', 'icon-1.svg', 'image-1.png', 'font-1.woff2'
-	language: 'html' | 'svg' | 'image' | 'json' | 'font';
+	name: string; // 'index.html', 'styles.css', 'icon-1.svg', 'image-1.png', 'font-1.woff2'
+	language: 'html' | 'css' | 'svg' | 'image' | 'json' | 'font' | 'jsx' | 'vue';
 	text?: string; // Source for text files
-	dataUrl?: string; // Original data: url for binary files (images, fonts)
+	dataUrl?: string; // Original data url for binary files (images, fonts)
+}
+
+/**
+ * The SNIP_RESULT payload the content script ships to the panel, where ResultPanel renders
+ * it. One shape covers all four cases, a code snip, an assistive json emit, a builder-gated
+ * refusal, and a multi-select batch. A batch fills `components` and leaves the single-snip
+ * fields empty, and every other case fills the single-snip fields and leaves `components` absent,
+ * so a component entry is always a plain result and never nests components itself.
+ */
+export interface SnipPayload {
+	mode: 'snip' | 'assistive';
+	format?: OutputFormat;
+	html?: string;
+	css?: string;
+	/** Self-contained html document for snip mode, kept for preview and storage. */
+	output?: string;
+	/** Output split into referenced files, index.html plus svgs and images. Html-shaped snips only. */
+	files?: AssetFile[];
+	/** Emitted assistive json for assistive mode. */
+	json?: string;
+	/** Provider-reported token usage for the polish call, when one ran. */
+	usage?: TokenUsage;
+	warnings?: string[];
+	/** Set when the page is a blocked site builder such as framer or wix. */
+	unsupported?: boolean;
+	builder?: string;
+	message?: string;
+	/** Id of the record this snip was persisted under, so the panel can toggle its saved flag. */
+	snippetId?: string;
+	/** Present for a multi-select snip, one entry per pinned element, in pin order. */
+	components?: SnipPayload[];
 }
 
 /**
@@ -251,7 +288,10 @@ export interface TokenUsage {
 	output: number;
 }
 
-/** One stored snippet. Only the last 50 are kept, fifo. */
+/**
+ * One stored snippet. Only the last 50 unsaved ones are kept, fifo. A record the
+ * user saved is exempt from that cap and survives Clear History.
+ */
 export interface SnippetRecord {
 	id: string; // Uuid v4
 	capturedAt: string;
@@ -259,6 +299,8 @@ export interface SnippetRecord {
 	element: Captured['element'];
 	output: { format: OutputFormat; html: string; css?: string; jsx?: string };
 	screenshot: string; // Data url thumbnail (<=200x200)
+	/** True once the user saved it. Absent means unsaved, so older records need no migration. */
+	saved?: boolean;
 }
 
 /** User preferences. Byok keys live separately under `byok.<provider>`, never here. */

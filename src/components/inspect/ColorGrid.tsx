@@ -1,15 +1,9 @@
 /**
- * components/inspect/ColorGrid.tsx: the colors inspector view
+ * The colors inspector view.
  *
- * Pipeline position: n/a, ui only
- * Reads from Captured: n/a
- * Writes to Captured: n/a
- *
- * Principles applied: none, ui only.
- *
- * Why this exists: renders the page's colors as a grid of cards, each a swatch beside
- * its hex value and, when the byok ai pass ran, its semantic role, such as primary
- * or accent. Clicking a card copies the hex.
+ * Renders the page's colors as a grid of cards, each a swatch beside its hex value and, when
+ * the byok ai pass ran, its semantic role, such as primary or accent. Clicking a card copies
+ * the hex.
  */
 import type { ColorReport } from '../../content/inspect/types';
 import { InspectCard } from './InspectCard';

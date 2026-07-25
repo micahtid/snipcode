@@ -1,15 +1,10 @@
 /**
- * assistive/assets.ts: asset extraction.
+ * Asset extraction for assistive mode.
  *
- * Pipeline position: capture. Assistive runs the capture phase only.
- * Reads from Captured: root.
- * It does not write to Captured. It returns an asset manifest.
- *
- * No principles apply here, since this is extraction.
- *
- * Why this exists: assistive mode lists the images and icons a component depends on so an
- * agent can fetch or re-reference them. This collects <img> sources (resolved from
- * currentSrc), css background-image urls, and inline svg icons across the subtree, all
+ * Assistive runs the capture phase only. It reads root from Captured and does not write back,
+ * returning an asset manifest instead. Assistive mode lists the images and icons a component
+ * depends on so an agent can fetch or re-reference them. This collects <img> sources (resolved
+ * from currentSrc), css background-image urls, and inline svg icons across the subtree, all
  * absolutized. This was ported and rewritten from v1 assets/asset-extractor.ts.
  */
 import { toAbsoluteUrl } from '../../utils/url';

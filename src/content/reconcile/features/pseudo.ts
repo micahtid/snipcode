@@ -1,28 +1,25 @@
 /**
- * features/pseudo.ts: generated-content pseudo-elements
+ * Generated-content pseudo-elements.
  *
- * Pipeline position: reconcile
- * Reads from Captured: root, clone
- * Writes to Captured: clone, marking elements and appending a <style> of pseudo rules
+ * This is a reconcile-phase feature handler. It reads root and clone from Captured and
+ * writes clone, marking elements and appending a <style> of pseudo rules. It extends
+ * the "ship what renders" approach to pseudo-elements, which inline styles cannot
+ * express.
  *
- * Extends the "ship what renders" approach to pseudo-elements, which inline
- * styles cannot express.
+ * The relevant spec is
+ * https://developer.mozilla.org/en-US/docs/Web/CSS/Pseudo-elements. It detects ::before
+ * and ::after with computed content other than `none`, ::marker on display:list-item
+ * elements, ::placeholder on elements with a placeholder attribute, and
+ * ::file-selector-button on file inputs. It tags the matching clone element with a
+ * data-snip-pseudo marker and adds `[data-snip-pseudo="n"]::x {... }` rules,
+ * snapshotted from the live pseudo's computed style, to the clone's shared synthesized
+ * <style>. See reconcile/synthesized.ts. It touches the clone only.
  *
- * CSS/spec reference: https://developer.mozilla.org/en-US/docs/Web/CSS/Pseudo-elements
- * Detection criterion: ::before and ::after with computed content other than `none`,
- * ::marker on display:list-item elements, ::placeholder on elements with a
- * placeholder attribute, and ::file-selector-button on file inputs.
- * Transform contract: it tags the matching clone element with a data-snip-pseudo
- * marker and adds `[data-snip-pseudo="n"]::x {... }` rules, snapshotted from the live
- * pseudo's computed style, to the clone's shared synthesized <style>. See
- * reconcile/synthesized.ts. It touches the clone only.
- *
- * Why this exists: ::before and ::after content such as counters, quote glyphs,
- * decorative bars, and css icons, plus styled ::marker and ::placeholder, render no
- * dom node, so a clone loses them entirely. Inline styles cannot target a
- * pseudo-element, so the faithful fix is a real css rule. The marker is a data-*
- * attribute rather than a class, so it survives the tailwind and bem emitters, which
- * rewrite class but keep data-*.
+ * ::before and ::after content such as counters, quote glyphs, decorative bars, and css
+ * icons, plus styled ::marker and ::placeholder, render no dom node, so a clone loses
+ * them entirely. Inline styles cannot target a pseudo-element, so the faithful fix is a
+ * real css rule. The marker is a data-* attribute rather than a class, so it survives
+ * the tailwind and bem emitters, which rewrite class but keep data-*.
  */
 import type { Captured } from '../../types';
 import { pairedSubtrees, isRedundantDecl, transformContext, inheritsProperty } from '../match';
@@ -88,7 +85,7 @@ function pseudosFor(el: Element): string[] {
 	return out;
 }
 
-/** True when a ::before/::after actually generates a box, meaning content is not `none`. */
+/** True when a ::before or ::after actually generates a box, meaning content is not `none`. */
 function hasContent(el: Element, pseudo: string): boolean {
 	const content = getComputedStyle(el, pseudo).getPropertyValue('content');
 	return content !== '' && content !== 'none' && content !== 'normal';

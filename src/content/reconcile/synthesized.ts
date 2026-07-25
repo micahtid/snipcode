@@ -1,19 +1,17 @@
 /**
- * reconcile/synthesized.ts: the shared synthesized-<style> carrier
+ * The shared synthesized-<style> carrier.
  *
- * Pipeline position: reconcile, a shared helper for the feature handlers
- * Reads from Captured: clone, warnings
- * Writes to Captured: clone, one appended <style>, and warnings
+ * This runs in the reconcile phase as a shared helper for the feature handlers. It reads
+ * clone and warnings from Captured and writes clone, one appended <style>, and warnings.
  *
  * It exists because two feature handlers express what an inline style cannot, and so
  * both ship a real css rule rather than a property. pseudo.ts materializes
- * ::before/::marker content, and states.ts reproduces :hover/:focus/:active. Each
- * needs the identical plumbing: a marker re-anchored rule appended to a <style> on
+ * ::before and ::marker content, and states.ts reproduces :hover, :focus, and :active. Each
+ * needs the identical plumbing, a marker re-anchored rule appended to a <style> on
  * the clone, later lifted into the document head by convert/format.ts. Rather than
  * have each handler create and manage its own <style> (the v1-era copy-paste), they
- * share one carrier here. A single appended <style> collects every synthesized rule,
- * which also gives the resolve phase one place to find and rewrite those rules'
- * url()/var() references (see resolve/inline.ts and resolve/vars.ts).
+ * share one carrier here, which also gives the resolve phase one place to find and
+ * rewrite those rules' url() and var() references (see resolve/inline.ts and resolve/vars.ts).
  *
  * The carrier is tagged with a data-* attribute so the resolve passes can locate it
  * and convert/format.ts strips it on lift. It never reaches the emitted markup.
@@ -38,7 +36,7 @@ const VOID_TAGS = new Set([
  * first use. Both pseudo.ts and states.ts feed this, so every synthesized rule lands in
  * one block in handler order.
  *
- * @param captured - clone + warnings mutated in place
+ * @param captured - clone and warnings mutated in place
  * @param rules - complete css rule strings (`selector {... }`), already formatted
  */
 export function appendSynthesizedRules(captured: Captured, rules: string[]): void {
@@ -85,7 +83,7 @@ export interface SynthesizedDeclaration {
 	important: boolean;
 }
 
-/** One parsed synthesized rule: its selector and the declarations under it. */
+/** One parsed synthesized rule, its selector and the declarations under it. */
 interface SynthesizedRule {
 	selector: string;
 	declarations: SynthesizedDeclaration[];
@@ -93,7 +91,7 @@ interface SynthesizedRule {
 
 /**
  * Walks every declaration in the synthesized <style>, read-only. The resolve passes use
- * this to gather the url()/var() references the synthesized rules carry, which the
+ * this to gather the url() and var() references the synthesized rules carry, which the
  * resting bake never sees because these rules live in a <style>, not in bakedStyles.
  *
  * @param captured - the capture whose synthesized <style> is read

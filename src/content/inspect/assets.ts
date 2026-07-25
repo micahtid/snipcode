@@ -1,19 +1,15 @@
 /**
- * inspect/assets.ts: page-wide asset extractor
+ * Page-wide asset extractor.
  *
- * Pipeline position: inspect, page-scoped. It reads the live dom directly and does not run the element pipeline.
- * Reads from DOM: document/window. This runs live, so the page must be loaded.
- * Writes to: nothing. This is pure extraction with no side effects.
- *
- * Principles applied: none. This is extraction.
- *
- * Why this exists: the assets inspector lists every image, media file, css
- * background, favicon, and inline svg the page uses so the panel can preview each
- * and download it. Each record carries the original url, so the card previews it
- * with a plain `<img>` and only fetches bytes on download; inline svgs have no url,
- * so their truncated markup rides along instead. Ported by rewriting from v1
- * assets/asset-extractor.ts, dropping the class/logger ceremony and the mime /
- * byte-size / source-element fields the panel never showed.
+ * This is a page-scan inspector that reads the live dom directly and does not run the element
+ * pipeline. It needs the page loaded, reads document and window, and writes nothing, a pure
+ * extraction. The assets inspector lists every image, media
+ * file, css background, favicon, and inline svg the page uses so the panel can preview each and
+ * download it. Each record carries the original url, so the card previews it with a plain `<img>`
+ * and only fetches bytes on download. Inline svgs have no url, so their truncated markup rides
+ * along instead. This was ported and rewritten from v1 assets/asset-extractor.ts, dropping the
+ * class and logger ceremony and the mime, byte-size, and source-element fields the panel never
+ * showed.
  */
 import type { AssetReport, AssetType } from './types';
 import { toAbsoluteUrl } from '../../utils/url';
@@ -43,7 +39,7 @@ export function extractPageAssets(): AssetReport[] {
 		assets.push(asset);
 	};
 
-	/** Record a url-bearing asset, absolutized. Any data: url and any unparseable url is dropped. */
+	/** Record a url-bearing asset, absolutized. Any data url and any unparseable url is dropped. */
 	const addUrl = (raw: string, type: AssetType, width?: number, height?: number): void => {
 		if (!raw || raw.startsWith('data:')) return;
 		const src = toAbsoluteUrl(raw, base);
@@ -83,7 +79,7 @@ function collectPictureSources(addUrl: AddUrl): void {
 	}
 }
 
-/** <video>/<audio> sources, a video poster image, and child <source> elements. */
+/** <video> and <audio> sources, a video poster image, and child <source> elements. */
 function collectMedia(addUrl: AddUrl): void {
 	for (const media of Array.from(document.querySelectorAll('video, audio'))) {
 		const kind: AssetType = media.tagName === 'VIDEO' ? 'video' : 'audio';
@@ -155,7 +151,7 @@ function filenameOf(url: string): string {
 	}
 }
 
-/** The url of each srcset candidate: the first token of each comma-separated entry. */
+/** The url of each srcset candidate, the first token of each comma-separated entry. */
 function parseSrcset(srcset: string): string[] {
 	if (!srcset) return [];
 	return srcset.split(',').map((entry) => entry.trim().split(/\s+/)[0] ?? '').filter(Boolean);

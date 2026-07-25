@@ -1,15 +1,9 @@
 /**
- * components/inspect/FontGrid.tsx: the fonts inspector view
+ * The fonts inspector view.
  *
- * Pipeline position: n/a, ui only
- * Reads from Captured: n/a
- * Writes to Captured: n/a
- *
- * Principles applied: none, ui only.
- *
- * Why this exists: renders the page's fonts as a grid of cards, each showing an
- * "Aa" sample set in that family, the family name, and its web/system origin plus
- * variant count. Clicking a card copies the family name.
+ * Renders the page's fonts as a grid of cards, each showing an "Aa" sample set in that
+ * family, the family name, and its web or system origin plus variant count. Clicking a card
+ * copies the family name.
  */
 import type { FontReport } from '../../content/inspect/types';
 import { InspectCard } from './InspectCard';

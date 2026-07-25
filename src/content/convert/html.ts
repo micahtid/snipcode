@@ -1,14 +1,12 @@
 /**
- * convert/html.ts: plain html + css output
+ * Plain html and css output.
  *
- * Pipeline position: convert
- * Reads from Captured: the inline-styled clone, fonts, and keyframes
- * Writes to Captured: nothing. It is a pure emitter that returns the output.
+ * This runs in the convert phase. It reads the inline-styled clone, fonts, and keyframes and
+ * writes nothing back, a pure emitter that returns the output. It emits the reconciled and
+ * resolved result.
  *
- * Emits the reconciled and resolved result.
- *
- * Why this exists: the "html" output format is the baseline self-
- * contained form: the inline-styled markup plus a <style> block carrying the
+ * The "html" output format is the baseline self-
+ * contained form, the inline-styled markup plus a <style> block carrying the
  * pieces that cannot live inline, @font-face and @keyframes. The :root custom
  * properties were already inlined onto the snip root by resolve/vars.ts. Every
  * other format, whether tailwind, bem, jsx, or vue, is a transform of this same baked
@@ -16,7 +14,7 @@
  */
 import type { Captured } from '../types';
 
-/** The emitted html + the stylesheet text that must accompany it. */
+/** The emitted html and the stylesheet text that must accompany it. */
 export interface HtmlOutput {
 	html: string;
 	css: string;
@@ -33,10 +31,10 @@ export function emitHtml(captured: Captured): HtmlOutput {
 }
 
 /**
- * Builds the @font-face + @keyframes stylesheet block shared by every emitter.
+ * Builds the @font-face and @keyframes stylesheet block shared by every emitter.
  * These at-rules cannot be expressed inline or as utility classes.
  *
- * @param captured - reads fonts + keyframes
+ * @param captured - reads fonts and keyframes
  */
 export function atRulesCss(captured: Captured): string {
 	const parts: string[] = [];
@@ -49,16 +47,16 @@ export function atRulesCss(captured: Captured): string {
  * The standalone document's base reset. Only the document-edge margin a user-agent
  * adds to <body> (8px) is zeroed, so the snip sits flush at the origin the way a
  * pasted component should, rather than shoved in by phantom margin it never authored.
- * Deliberately minimal: no box-sizing or typography reset, which would change how the
- * baked styles render. The snip's own margins/padding are baked inline and untouched.
+ * Deliberately minimal, no box-sizing or typography reset, which would change how the
+ * baked styles render. The snip's own margins and padding are baked inline and untouched.
  */
 const BASE_RESET = 'html, body { margin: 0; padding: 0; }';
 
 /**
  * Composes a single self-contained html document from the markup and its stylesheet.
- * Emits a valid standalone document, with doctype, charset, and head/body, so the artifact does
+ * Emits a valid standalone document, with doctype, charset, and head and body, so the artifact does
  * not depend on the origin and renders identically wherever it is pasted. This is what
- * renders standalone, and what the grader screenshots.
+ * the grader screenshots.
  *
  * @param html - the inline-styled markup
  * @param css - the accompanying @font-face / @keyframes block, which may be empty

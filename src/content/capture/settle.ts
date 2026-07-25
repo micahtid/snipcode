@@ -1,29 +1,26 @@
 /**
- * capture/settle.ts: bring the target to its settled, revealed state before capture
+ * Bring the target to its settled, revealed state before capture.
  *
- * Pipeline position: capture (runs first, before clone + computed read)
- * Reads from Captured: n/a (operates on the live root before Captured is built)
- * Writes to Captured: n/a (returns a warning string the caller records)
+ * This runs first in the capture phase, before the clone and computed read. It operates on
+ * the live root before Captured is built and writes nothing, returning a warning string the
+ * caller records. The capture path reads a transient frame. Many components enter with a
+ * scroll-driven reveal, an element styled `opacity: 0` plus a transform offset until an
+ * IntersectionObserver flips a class on scroll. If we clone and read computed style before
+ * that fires, we bake the frozen blank pre-reveal frame and the snip ships empty, even though
+ * the reference, which the grader scrolls into view before screenshotting, looks fully
+ * revealed. The same gap leaves lazy images unloaded and webfonts unswapped.
  *
- * Why this exists: the capture path reads a transient frame. Many components enter
- * with a scroll-driven reveal, an element styled `opacity: 0` plus a transform
- * offset until an IntersectionObserver flips a class on scroll. If we clone and read
- * computed style before that fires, we bake the frozen blank pre-reveal frame and the
- * snip ships empty, even though the reference, which the grader scrolls into view
- * before screenshotting, looks fully revealed. The same gap leaves lazy images
- * unloaded and webfonts unswapped.
+ * Settle removes the gap by driving the live element to the state a human would see. It
+ * scrolls it into view so observers and scroll reveals fire, awaits the reveal, finishes any
+ * running transitions and animations to their end state, so the capture is stable and
+ * deterministic, not a mid-flight frame, forces lazy images to load and decode, and awaits
+ * fonts. Infinite animations are left alone, because finishing them is meaningless and the
+ * guard keeps the settle deterministic.
  *
- * Settle removes the gap by driving the live element to the state a human would see:
- * scroll it into view so observers and scroll reveals fire, await the reveal, finish
- * any running transitions/animations to their end state, so the capture is stable and
- * deterministic, not a mid-flight frame, force lazy images to load and decode, and
- * await fonts. Infinite animations are left alone, because finishing them is
- * meaningless and the guard keeps the settle deterministic.
- *
- * It does not mutate authored styles or structure. It only nudges the page's own
- * reveal machinery and waits. A reveal that is gated on an event we cannot fire, such as
- * a click or a custom timer, will not settle. That residual is detected and returned as a
- * warning so the snip is flagged rather than shipped silently blank.
+ * It does not mutate authored styles or structure. It only nudges the page's own reveal
+ * machinery and waits. A reveal that is gated on an event we cannot fire, such as a click or a
+ * custom timer, will not settle. That residual is detected and returned as a warning so the
+ * snip is flagged rather than shipped silently blank.
  */
 
 /** Resolves after `n` animation frames, letting reveal classes and layout apply. */
@@ -124,7 +121,7 @@ function finishTransientAnimations(root: Element): void {
 }
 
 /**
- * Heuristic check for a reveal that never fired: after settling, the root still paints
+ * Heuristic check for a reveal that never fired. After settling, the root still paints
  * nothing because it, or its only child wrapper, is held invisible. Returns a warning
  * string so the snip is flagged. This never blocks or alters the snip. It only reports.
  *

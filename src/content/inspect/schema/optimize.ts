@@ -1,18 +1,14 @@
 /**
- * inspect/schema/optimize.ts: schema size reduction
+ * Schema size reduction.
  *
- * Pipeline position: inspect, page-scoped. It post-processes the extracted schema.
- * Reads from DOM: nothing. It operates on the extracted schema.
- * Writes to: nothing. It returns an optimized copy.
- *
- * Principles applied: none. This is transformation.
- *
- * Why this exists: the raw schema can be large, and the ai pass pays per token, so
- * this trims it before the prompt: dedupe and cap the color palette, sort and bound
- * spacing, merge near-identical style entries, and apply hard caps on the style
- * map, structure, states, sections, and blueprints. The caps keep the prompt small,
- * a simpler defense against a slow model than any timeout. Ported by rewriting
- * from v1 schema/schema-optimizer.ts.
+ * This runs in the inspect phase, page-scoped, post-processing the extracted schema. It reads
+ * nothing from the DOM, operating on the extracted schema, and writes nothing, returning an
+ * optimized copy. It is a transformation. The raw schema can be large, and the ai pass pays per
+ * token, so this trims it before the prompt. It dedupes and caps the color palette, sorts and
+ * bounds spacing, merges near-identical style entries, and applies hard caps on the style map,
+ * structure, states, sections, and blueprints. The caps keep the prompt small, a simpler defense
+ * against a slow model than any timeout. This was ported and rewritten from v1
+ * schema/schema-optimizer.ts.
  */
 import type { PageSchema } from './types';
 

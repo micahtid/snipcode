@@ -1,16 +1,10 @@
 /**
- * components/inspect/AssetGrid.tsx: the assets inspector view
+ * The assets inspector view.
  *
- * Pipeline position: n/a, ui only
- * Reads from Captured: n/a
- * Writes to Captured: n/a
- *
- * Principles applied: none, ui only.
- *
- * Why this exists: renders the page's images, media, backgrounds, favicons, and
- * inline svgs as a grid of thumbnail cards showing the filename, type, and
- * dimensions. Clicking a card downloads the asset. Remote urls download directly,
- * and inline svgs download their serialized markup as a .svg file.
+ * Renders the page's images, media, backgrounds, favicons, and inline svgs as a grid of
+ * thumbnail cards showing the filename, type, and dimensions. Clicking a card downloads the
+ * asset. Remote urls download directly, and inline svgs download their serialized markup as
+ * a .svg file.
  */
 import { useState } from 'react';
 import { Image as ImageIcon } from 'lucide-react';
@@ -47,7 +41,7 @@ export function AssetGrid({ assets }: { assets: AssetReport[] }) {
 	);
 }
 
-/** The thumbnail: inline-svg markup, the remote image, or a fallback icon on load failure. */
+/** The thumbnail, inline-svg markup, the remote image, or a fallback icon on load failure. */
 function AssetThumb({ asset }: { asset: AssetReport }) {
 	const [failed, setFailed] = useState(false);
 	if (asset.type === 'inline-svg' && asset.markup) {
@@ -59,7 +53,7 @@ function AssetThumb({ asset }: { asset: AssetReport }) {
 	return <ImageIcon size={18} color={COLORS.slate400} />;
 }
 
-/** The meta line: the asset type plus its pixel dimensions when known. */
+/** The meta line, the asset type plus its pixel dimensions when known. */
 function metaOf(asset: AssetReport): string {
 	const dims = asset.width && asset.height ? ` · ${asset.width}×${asset.height}` : '';
 	return `${TYPE_LABELS[asset.type]}${dims}`;

@@ -1,22 +1,20 @@
 /**
- * resolve/inline.ts: inline external resources so the snip is self-contained
+ * Inline external resources so the snip is self-contained.
  *
- * Pipeline position: resolve (the closing step, after the standalone reconciliation)
- * Reads from Captured: clone, bakedStyles, fonts, page
- * Writes to Captured: clone img src, bakedStyles background url, fonts src, and warnings
+ * This is the closing step of the resolve phase, after the standalone reconciliation. It reads
+ * clone, bakedStyles, fonts, and page, and writes clone img src, bakedStyles background url,
+ * fonts src, and warnings. A snip that references the origin, such as a webfont url, an image
+ * url, or a background-image url, breaks the moment it is pasted somewhere that cannot reach
+ * those urls, whether hotlink-protected fonts, authenticated image cdns, or simply offline.
+ * The artifact must not depend on the origin. This step fetches every referenced font and image
+ * through the extension's privileged background context, whose <all_urls> permission reaches
+ * resources the page's own context cannot, and rewrites the reference to a base64 data uri, so
+ * the snip carries its pixels with it.
  *
- * Why this exists: a snip that references the origin, such as a webfont url, an image url,
- * or a background-image url, breaks the moment it is pasted somewhere that cannot reach
- * those urls, hotlink-protected fonts, authenticated image cdns, or simply offline.
- * The artifact must not depend on the origin. This step fetches every referenced font
- * and image through the extension's privileged background context, whose <all_urls>
- * permission reaches resources the page's own context cannot, and rewrites the
- * reference to a base64 data uri, so the snip carries its pixels with it.
- *
- * Best-effort and deterministic: a fetch that fails, whether blocked, oversize, or offline,
- * leaves the absolute url in place rather than throwing, so the snip still ships. Given
- * the same responses the rewrite is byte-identical. Bounded by a resource cap and, in
- * the background, a size cap so a heavy page cannot bloat the output without limit.
+ * It is best-effort and deterministic, so a fetch that fails, whether blocked, oversize, or
+ * offline, leaves the absolute url in place rather than throwing, and the snip still ships.
+ * Given the same responses the rewrite is byte-identical. It is bounded by a resource cap and,
+ * in the background, a size cap so a heavy page cannot bloat the output without limit.
  */
 import type { Captured } from '../types';
 import { synthesizedStyle, forEachSynthesizedDeclaration, rewriteSynthesizedDeclarations } from '../reconcile/synthesized';
@@ -62,7 +60,7 @@ export async function inlineResources(captured: Captured): Promise<void> {
 	for (const [, baked] of captured.bakedStyles) {
 		for (const prop of BG_PROPS) for (const u of urlsIn(baked.get(prop) ?? '')) add(u);
 	}
-	// Synthesized state/pseudo rules carry their own url(), such as a hover background or a
+	// Synthesized state or pseudo rules carry their own url(), such as a hover background or a
 	// css-icon content, which the bakedStyles loop never sees because they live in a <style>.
 	forEachSynthesizedDeclaration(captured, (decl) => { for (const u of urlsIn(decl.value)) add(u); });
 
@@ -74,7 +72,7 @@ export async function inlineResources(captured: Captured): Promise<void> {
 
 	const dataByUrl = await fetchAll(urls);
 	if (dataByUrl.size === 0) {
-		// Nothing inlined: the rewrite passes below are all no-ops, but the closing
+		// Nothing inlined, so the rewrite passes below are all no-ops, but the closing
 		// self-containment guard must still run so an un-inlinable face is dropped to its
 		// fallback rather than shipping a dead origin url.
 		captured.warnings.push('inline: no resources could be inlined; the snip references the origin for fonts/images');
@@ -120,12 +118,12 @@ export async function inlineResources(captured: Captured): Promise<void> {
 /**
  * Drops any @font-face the inlining could not make self-contained, so the artifact never
  * ships a dead origin reference. A face whose src resolves only to an external url, with no
- * data: bytes inlined and no local() system source, cannot render once the snip is pasted
+ * data bytes inlined and no local() system source, cannot render once the snip is pasted
  * away from the origin, and appendGenericFallbacks has already guaranteed every baked
  * font-family stack ends in a generic, so the text falls back deterministically rather
  * than depending on (or 404ing from) the origin.
  *
- * This is the closing guard for the resource path: whatever the recovery and inlining
+ * This is the closing guard for the resource path, so whatever the recovery and inlining
  * steps could not carry is corrected to a clean fallback here, never left to break, and
  * the standalone resource probe still counts the family as unresolved so the loss stays
  * visible. Only un-inlinable faces are removed, so a fully inlined corpus is untouched.
@@ -142,9 +140,9 @@ function dropUncontainedFaces(captured: Captured): void {
 }
 
 /**
- * Whether a @font-face src can render without the origin: it has no external url at all,
- * whether data:, local(), or already resolved, or it pairs an external url with an inlined
- * data: source or a local() system fallback the browser can use offline.
+ * Whether a @font-face src can render without the origin, so it has no external url at all,
+ * whether data, local(), or already resolved, or it pairs an external url with an inlined
+ * data source or a local() system fallback the browser can use offline.
  *
  * @param src - the face's src descriptor
  */
@@ -189,7 +187,7 @@ async function fetchData(url: string): Promise<string | null> {
 	return fetchDataViaBackground(url);
 }
 
-/** Direct content-script fetch + encode. Null if blocked by cors, oversize, or non-2xx. */
+/** Direct content-script fetch and encode. Null if blocked by cors, oversize, or non-2xx. */
 async function fetchDataDirect(url: string): Promise<string | null> {
 	try {
 		const res = await fetch(url, { mode: 'cors', credentials: 'omit' });
@@ -225,7 +223,7 @@ function blobToDataUrl(blob: Blob): Promise<string | null> {
 	});
 }
 
-/** Every url() target inside a css value; font src may list several. */
+/** Every url() target inside a css value, since font src may list several. */
 function urlsIn(value: string): string[] {
 	const out: string[] = [];
 	for (const match of value.matchAll(URL_IN_VALUE)) {

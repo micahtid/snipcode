@@ -1,10 +1,11 @@
-// Minimize-loop: measure the deterministic minimize phase over the training-data corpus.
+// Measure the deterministic minimize phase over the training-data corpus.
 //
 // For each bundle this harness snips once through the built extension, which returns both
-// the pre-minimize shipped document and the minimized one from that single capture, then:
-//   1. reads the minimizer's own stats: declarations and chars before and after, and the
+// the pre-minimize shipped document and the minimized one from that single capture, then
+// does three things.
+//   1. reads the minimizer's own stats, declarations and chars before and after, and the
 //      minimize wall time,
-//   2. runs the tolerant pixel backstop: renders the pre-minimize and minimized documents
+//   2. runs the tolerant pixel backstop, which renders the pre-minimize and minimized documents
 //      full-page and requires zero diff pixels at pixelmatch threshold 0.1, so any render
 //      change the per-element oracle missed is caught here,
 //   3. records one JSONL row.
@@ -14,7 +15,7 @@
 // Determinism of the transform is gated separately by tests/fixtures.mjs on drift-free
 // local pages, so this harness does not re-check it.
 //
-// Requires `npm run build` so dist/ is current. Run: `node tests/minimize-loop.mjs`
+// Requires `npm run build` so dist/ is current. Run `node tests/minimize-loop.mjs`
 // (optionally `--only <substring>` to restrict to one cluster).
 
 import { chromium } from 'playwright';
@@ -49,7 +50,7 @@ async function decode(buf) {
 }
 
 /**
- * The tolerant pixel backstop: zero diff pixels at threshold 0.1 between the pre-minimize
+ * The tolerant pixel backstop requires zero diff pixels at threshold 0.1 between the pre-minimize
  * and post-minimize renders. Returns the diff-pixel count, or -1 when the two renders
  * differ in size, which is itself a failure.
  */
@@ -69,7 +70,7 @@ async function measureBundle(extContext, refBrowser, bundle, tmpDir, dpr) {
 	if (!stats) throw new Error('minimize stats absent; is the build current?');
 	if (!on.htmlBaseline) throw new Error('pre-minimize baseline absent; is the build current?');
 
-	// Drift-free backstop: pre-minimize and post-minimize documents come from the SAME
+	// Drift-free backstop. The pre-minimize and post-minimize documents come from the SAME
 	// capture, so any pixel difference is minimization, never a live-site change between snips.
 	const key = `${bundle.tier}-${bundle.name}`;
 	const beforePath = path.join(tmpDir, `${key}.before.html`);

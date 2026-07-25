@@ -1,21 +1,19 @@
 /**
- * convert/tailwind.ts: inline styles -> tailwind utility classes
+ * Inline styles -> tailwind utility classes.
  *
- * Pipeline position: convert
- * Reads from Captured: clone, inline-styled
- * Writes to Captured: nothing. It deep-copies the clone, so the canonical clone is untouched.
+ * This runs in the convert phase. It reads the inline-styled clone and writes nothing back,
+ * deep-copying the clone so the canonical clone is untouched. It is a format transform of the
+ * baked result.
  *
- * A format transform of the baked result.
- *
- * Why this exists: the tailwind / jsx-tailwind formats express
+ * The tailwind and jsx-tailwind formats express
  * styles as utility classes. This walks a *copy* of the baked clone, so all 7
  * formats stay derivable from one capture, and turns
- * each element's inline declarations into utilities: a curated map for the common
+ * each element's inline declarations into utilities, a curated map for the common
  * properties, namely display, flex, spacing, and color via the palette matcher, and
  * tailwind's arbitrary-value syntax `[prop:value]` for everything else, which
  * guarantees full coverage and exact fidelity in a tailwind environment without
- * an exhaustive mapping table. Ported from v1 css-to-tailwind.ts +
- * tailwind-extractor.ts, rewritten, covering the conversion mappings and arbitrary-value handling.
+ * an exhaustive mapping table. Ported from v1 css-to-tailwind.ts and
+ * tailwind-extractor.ts, rewritten.
  */
 import type { Captured } from '../types';
 import { snapValue } from './snap';
@@ -23,8 +21,8 @@ import { matchColor } from './tw-palette';
 import { atRulesCss, type HtmlOutput } from './html';
 
 /**
- * Emits the snip as tailwind-classed markup plus the shared @font-face/@keyframes
- * block. Fidelity in a tailwind project comes from utilities + arbitrary values. The
+ * Emits the snip as tailwind-classed markup plus the shared @font-face and @keyframes
+ * block. Fidelity in a tailwind project comes from utilities and arbitrary values. The
  * grader uses the inline html format, so this targets clean, usable output.
  *
  * @param captured - read-only, so a deep copy of the clone is transformed
@@ -145,7 +143,7 @@ function alignToken(value: string): string {
 		.replace('space-evenly', 'evenly');
 }
 
-/** numeric/keyword font-weight -> tailwind weight utility. */
+/** Numeric or keyword font-weight -> tailwind weight utility. */
 function fontWeightClass(value: string): string {
 	const map: Record<string, string> = {
 		'100': 'font-thin', '200': 'font-extralight', '300': 'font-light', '400': 'font-normal',

@@ -1,4 +1,4 @@
-// Run-pipeline: drive the built snipcode v2 extension on each training-data
+// Drive the built snipcode v2 extension on each training-data
 // bundle and save its deterministic output as output.html (was 4-final-ai.html
 // in v1). Uses the headless snip bridge in src/content/index.ts. The runner
 // dispatches a "snip-runner:snip" CustomEvent on the page document, the content
@@ -7,7 +7,7 @@
 // so this measures the deterministic pipeline.
 //
 // window.postMessage and chrome.runtime messages do not cross the content
-// script's isolated world. CustomEvents on `document` do (page + content script
+// script's isolated world. CustomEvents on `document` do (page and content script
 // share the document). The script signals readiness via data-snip-injected.
 //
 // Requires `npm run build` so dist/ is current. Chromium loads extensions only
@@ -23,7 +23,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const EXT_DIR = path.resolve(HERE, '..', 'dist');
 const DEFAULT_DATA_DIR = path.join(os.homedir(), 'Downloads', 'training-data');
 const RUNNER_TIMEOUT_MS = 60_000;
-const SETTLE_MS = 400; // Post-load / post-scroll wait for layout and reveal animations to settle.
+const SETTLE_MS = 400; // Post-load and post-scroll wait for layout and reveal animations to settle.
 
 /** Read source.json supporting both the flat bundle schema and the nested assistive schema. */
 export function readSource(source) {
@@ -139,8 +139,8 @@ export async function launchExtensionContext(dpr = 1) {
 }
 
 /**
- * Write a split-asset file set into a bundle directory: index.html plus each lifted
- * icon-N.svg / image-N.ext / font-N.ext, so the training data carries the same split the
+ * Write a split-asset file set into a bundle directory, index.html plus each lifted
+ * icon-N.svg, image-N.ext, and font-N.ext, so the training data carries the same split the
  * sidebar ships. Text files (html, svg) write verbatim. Binary files (images, fonts) decode
  * their data uri to bytes, base64 or url-encoded, and write binary, so the relative
  * references in index.html resolve.
@@ -163,7 +163,7 @@ async function writeBundleFiles(dir, files) {
 export async function runAll(opts = {}) {
 	const dataDir = opts.dataDir ?? DEFAULT_DATA_DIR;
 	let bundles = await findBundles(dataDir);
-	// --only <substring>: restrict to bundles whose "tier/name" contains the substring,
+	// --only <substring> restricts to bundles whose "tier/name" contains the substring,
 	// so a single cluster can be re-snipped cheaply during the measurement loop.
 	if (opts.only) bundles = bundles.filter((b) => `${b.tier}/${b.name}`.includes(opts.only));
 	if (bundles.length === 0) throw new Error(`no bundles with source.json found under ${dataDir}` + (opts.only ? ` matching "${opts.only}"` : ''));
@@ -186,10 +186,10 @@ export async function runAll(opts = {}) {
 				try {
 					const { html, files, warnings, probe, emittedProbe } = await snipOne(context, bundle);
 					await fs.writeFile(path.join(bundle.dir, 'output.html'), html, 'utf8');
-					// Also persist the split delivery shape (index.html + lifted assets), the
+					// Also persist the split delivery shape (index.html and lifted assets), the
 					// same files the sidebar presents, so the training data exercises that path.
 					if (files) await writeBundleFiles(bundle.dir, files);
-					// Sidecar: the completeness-probe counts the grader folds in (drift-free).
+					// Sidecar, the completeness-probe counts the grader folds in (drift-free).
 					if (probe) {
 						await fs.writeFile(
 							path.join(bundle.dir, 'probe.json'),
@@ -197,7 +197,7 @@ export async function runAll(opts = {}) {
 							'utf8',
 						);
 					}
-					// Sidecar: the emitted-artifact probe, diffing the shipped BEM artifact vs
+					// Sidecar, the emitted-artifact probe, diffing the shipped BEM artifact vs
 					// live (delta A) and vs the inline clone (delta B), aggregated by classify.mjs.
 					if (emittedProbe) {
 						await fs.writeFile(path.join(bundle.dir, 'emitted-probe.json'), JSON.stringify(emittedProbe, null, 2), 'utf8');

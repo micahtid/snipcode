@@ -1,17 +1,16 @@
 /**
- * reconcile/selector.ts: a compound/combinator css selector parser
+ * A compound and combinator css selector parser.
  *
- * Pipeline position: reconcile, a leaf utility used by features/states.ts
- * Reads from Captured: nothing, it operates on selector strings
- * Writes to Captured: nothing, it is pure
+ * This runs in the reconcile phase as a leaf utility used by features/states.ts. It reads
+ * nothing from Captured, operating on selector strings, and writes nothing, being pure.
  *
  * It exists because re-anchoring an interactive-state rule (`.nav > .btn:hover`)
  * to a standalone artifact means taking it apart structurally. We need to know which
- * compound is the subject, which compounds carry a `:hover`/`:focus`/`:active`, and
+ * compound is the subject, which compounds carry a `:hover`, `:focus`, or `:active`, and
  * how they are joined. A regex cannot do that safely. A selector nests parens
  * (`:is(.a, .b)`, `:nth-child(2n+1)`), brackets (`[href="a > b"]`), and strings, any
  * of which can hide a comma, a combinator, or a colon. So this is a real, if small,
- * parser that walks the string with paren/bracket/quote depth tracking, the same job
+ * parser that walks the string with paren, bracket, and quote depth tracking, the same job
  * the vendored `parsel` micro-parser does, kept here with no node dependency.
  *
  * It is deliberately structural-only. It identifies compounds, the combinators
@@ -20,10 +19,10 @@
  * balanced delimiters. The live `element.matches()` in the caller is the real
  * arbiter, and an unsupported `:has()` argument throws there and the caller drops the
  * rule. Anything with unbalanced delimiters throws a SyntaxError so the caller can
- * drop + warn rather than emit a broken selector.
+ * drop and warn rather than emit a broken selector.
  */
 
-/** A combinator between two compounds: descendant as a space, child, next-sibling, subsequent-sibling. */
+/** A combinator between two compounds, descendant as a space, child, next-sibling, subsequent-sibling. */
 export type Combinator = ' ' | '>' | '+' | '~';
 
 /**
@@ -48,14 +47,14 @@ export function safeMatches(el: Element, selector: string): boolean {
 }
 
 /**
- * The forgiving/relational functional pseudo-classes whose argument is itself a selector
+ * The forgiving and relational functional pseudo-classes whose argument is itself a selector
  * list. A framework can bury an interactive pseudo inside one. Tailwind v4 compiles
  * `group-hover:` to `:is(:where(.group):hover *)`, so finding the element to force means
  * descending into these and locating the compound that actually carries the `:hover`.
  */
 const FORGIVING_FUNCTIONAL = new Set([':is', ':where', ':not', ':has']);
 
-/** One compound selector: a run of simple selectors with no combinator between them. */
+/** One compound selector, a run of simple selectors with no combinator between them. */
 export interface Compound {
 	/** The compound's source text, verbatim. */
 	raw: string;
@@ -73,7 +72,7 @@ export interface Compound {
 	pseudoElement: string;
 }
 
-/** One complex selector: compounds left-to-right, joined by combinators. */
+/** One complex selector, compounds left-to-right, joined by combinators. */
 export interface Complex {
 	/** The compounds, in source (left-to-right) order. The last is the subject. */
 	compounds: Compound[];
@@ -93,9 +92,9 @@ function isIdentChar(ch: string): boolean {
 }
 
 /**
- * Cheap pre-filter: whether a selector mentions any dynamic interactive pseudo-class
- * at all. Used to skip the full parse for the overwhelming majority of rules that
- * carry none. A false positive, where the token appears inside a string or comment,
+ * Cheap pre-filter, whether a selector mentions any dynamic interactive pseudo-class.
+ * Used to skip the full parse for the overwhelming majority of rules that carry none.
+ * A false positive, where the token appears inside a string or comment,
  * only costs a parse that then finds nothing, never a wrong result.
  *
  * @param selector - the rule selector text
@@ -116,7 +115,7 @@ export function parseSelectorList(selector: string): Complex[] {
 	return splitTopLevel(selector, ',').map(parseComplex);
 }
 
-/** One element to force a state on: its structural selector plus the pseudos to force there. */
+/** One element to force a state on, its structural selector plus the pseudos to force there. */
 export interface TriggerBearer {
 	/** The bearer compound's structural selector, matched against a live element to force it.
 	 * An empty string (a bare `:hover`) matches any element. */
@@ -129,7 +128,7 @@ export interface TriggerBearer {
  * Finds every element a state rule's selector asks to force, as (structural selector,
  * pseudos) pairs. Measurement only needs the element carrying the dynamic pseudo, wherever
  * it sits, never the subject relationship. Forcing that element and reading the subtree
- * lets the engine resolve descendant/group-hover/sibling effects on its own. This is
+ * lets the engine resolve descendant, group-hover, and sibling effects on its own. This is
  * strictly smaller than re-anchoring the whole combinator chain.
  *
  * A pseudo at a compound's top level (`.btn:hover`) yields the compound's structural part as
@@ -150,7 +149,7 @@ export function findTriggerBearers(selector: string): TriggerBearer[] {
 }
 
 /**
- * Collects the bearers carried by one compound: its own top-level dynamic pseudos (with the
+ * Collects the bearers carried by one compound, its own top-level dynamic pseudos (with the
  * compound's structural part), plus any carried inside a forgiving functional pseudo whose
  * argument holds a dynamic pseudo (descended into recursively). A functional pseudo that
  * holds a dynamic pseudo is itself dropped from the structural part (it would never match at
@@ -192,7 +191,7 @@ function functionalArgument(piece: string): string {
 }
 
 /**
- * Parses one complex selector, with no top-level comma, into compounds + combinators.
+ * Parses one complex selector, with no top-level comma, into compounds and combinators.
  *
  * @param complex - a single complex selector
  * @returns the parsed compounds and the combinators between them
@@ -235,7 +234,7 @@ function splitCompounds(s: string): { compoundTexts: string[]; combinators: Comb
 		if (ch === '\\') { cur += ch + (s[i + 1] ?? ''); i += 2; continue; }
 
 		if (depth === 0 && (WS.has(ch) || COMBINATOR_CHARS.has(ch))) {
-			// A combinator boundary: consume the whole run of whitespace and at most one
+			// A combinator boundary, consume the whole run of whitespace and at most one
 			// explicit combinator. The run is a descendant combinator unless it contains an
 			// explicit one, in which case that wins and any whitespace around it is just padding.
 			let comb: Combinator = ' ';
@@ -348,7 +347,7 @@ function normalizePseudoElement(piece: string): string {
 
 /**
  * Splits a compound into its individual simple selectors (`*`, tag, `.class`, `#id`,
- * `[attr]`, `:pseudo`, `::pseudo-element`), tracking paren/bracket depth and escapes
+ * `[attr]`, `:pseudo`, `::pseudo-element`), tracking paren and bracket depth and escapes
  * so a delimiter inside `[...]` or `(...)` never starts a new piece.
  *
  * @param compound - the compound text (no combinators)
@@ -363,7 +362,7 @@ function tokenizeSimpleSelectors(compound: string): string[] {
 		if (ch === '[') {
 			i = skipBalanced(compound, i, '[', ']');
 		} else if (ch === ':') {
-			// Pseudo-class or pseudo-element: one or two colons, an identifier, and an optional
+			// Pseudo-class or pseudo-element, one or two colons, an identifier, and an optional
 			// balanced argument list.
 			i++;
 			if (compound[i] === ':') i++;
@@ -378,7 +377,7 @@ function tokenizeSimpleSelectors(compound: string): string[] {
 			i = readIdent(compound, i);
 			if (compound[i] === '|') i = readIdent(compound, i + 1);
 		}
-		if (i <= start) i = start + 1; // Defensive: never fail to advance.
+		if (i <= start) i = start + 1; // Defensive, never fail to advance.
 		pieces.push(compound.slice(start, i));
 	}
 	return pieces;
@@ -395,7 +394,7 @@ function readIdent(s: string, i: number): number {
 	return i;
 }
 
-/** Advance past a balanced `open`/`close` delimited run, e.g. `[...]` or `(...)`, quote-aware. */
+/** Advance past a balanced `open` and `close` delimited run, e.g. `[...]` or `(...)`, quote-aware. */
 function skipBalanced(s: string, i: number, open: string, close: string): number {
 	let depth = 0;
 	let quote: string | null = null;
@@ -414,5 +413,5 @@ function skipBalanced(s: string, i: number, open: string, close: string): number
 			if (depth === 0) return i + 1;
 		}
 	}
-	return i; // Unbalanced: splitCompounds/splitTopLevel already guard the whole string.
+	return i; // Unbalanced, splitCompounds and splitTopLevel already guard the whole string.
 }

@@ -1,17 +1,17 @@
 // Fidelity classifier. Reads the per-bundle sidecars the pipeline runner writes
 // (emitted-probe.json, probe.json) plus the shipped output.html and sorts each bundle's
 // residual into exactly one family, so a fix is routed to its real cause rather than a
-// visual guess:
+// visual guess.
 //
-//   delta B (emitted vs inline-clone render)  -> convert/emit cascade loss
-//   delta A absent from emitted css           -> value absent at capture/bake
+//   delta B (emitted vs inline-clone render)  -> convert and emit cascade loss
+//   delta A absent from emitted css           -> value absent at capture and bake
 //   delta A present but rendered differently  -> another render-time mechanism
-//   surviving http(s):// resource urls        -> origin gap (fonts/images not inlined)
+//   surviving http(s):// resource urls        -> origin gap (fonts and images not inlined)
 //   silently dropped elements                 -> structural drop
 //
 // All inputs are deterministic and drift-free (the probe diffs computed styles in an
 // isolated iframe, and the url scan is a static read), so this table is a stable
-// baseline the measurement loop compares against. Run: `node tests/classify.mjs`.
+// baseline the measurement loop compares against. Run `node tests/classify.mjs`.
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -26,7 +26,7 @@ const MATERIAL = 3;
 
 /**
  * Count fetchable http(s) RESOURCE urls in the output. The self-containment gate is
- * about resources the artifact must fetch to render (a font src, an image src/srcset, a
+ * about resources the artifact must fetch to render (a font src, an image src or srcset, a
  * css url()), not navigation targets. An `<a href>` to another page is a legitimate
  * external link, never a self-containment violation, so it is excluded. So are w3.org
  * xml-namespace identifiers, which are never fetched.

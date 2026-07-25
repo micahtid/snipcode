@@ -1,18 +1,11 @@
 /**
- * components/inspect/SchemaView.tsx: the schema inspector view
+ * The schema inspector view.
  *
- * Pipeline position: n/a, ui only
- * Reads from Captured: n/a
- * Writes to Captured: n/a
- *
- * Principles applied: none, ui only.
- *
- * Why this exists: renders the page's design-system schema as a scrollable code
- * block with copy and download. It uses its own small code surface rather than the
- * snip ResultPanel's. A schema is not a snip, so routing it through ResultPanel
- * would couple it to snip-only concerns: the format eyebrow, file tabs, and preview.
- * The surface still shares the theme tokens and the sc-icon-btn / sc-scroll classes
- * so it matches the snip code block visually.
+ * Renders the page's design-system schema as a scrollable code block with copy and download.
+ * It uses its own small code surface rather than the snip ResultPanel's. A schema is not a
+ * snip, so routing it through ResultPanel would couple it to snip-only concerns like the
+ * format eyebrow, file tabs, and preview. The surface still shares the theme tokens and the
+ * sc-icon-btn and sc-scroll classes so it matches the snip code block visually.
  */
 import { useState } from 'react';
 import { Check, Copy, Download } from 'lucide-react';

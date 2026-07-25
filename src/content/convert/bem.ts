@@ -1,15 +1,13 @@
 /**
- * convert/bem.ts: inline styles -> bem classes + css/scss
+ * Inline styles -> bem classes and a css or scss stylesheet.
  *
- * Pipeline position: convert
- * Reads from Captured: clone, inline-styled
- * Writes to Captured: nothing. It deep-copies the clone, so the canonical clone is untouched.
+ * This runs in the convert phase. It reads the inline-styled clone and writes nothing back,
+ * deep-copying the clone so the canonical clone is untouched. It is a format transform of the
+ * baked result.
  *
- * A format transform of the baked result.
- *
- * Why this exists: the bem-css and bem-scss formats want semantic
+ * The bem-css and bem-scss formats want semantic
  * classes and a separate stylesheet instead of inline styles. This dedups
- * identical declaration sets into shared bem-named classes (block + block__element)
+ * identical declaration sets into shared bem-named classes (block and block__element)
  * and emits either a flat css ruleset or a nested scss block. Like the other
  * emitters it works on a copy of the clone so all 7 formats stay derivable from
  * one capture. Ported from v1 css-to-bem.ts, the inline-to-class dedup, rewritten
@@ -80,7 +78,7 @@ export function emitBem(captured: Captured, scss: boolean): HtmlOutput {
 
 /**
  * Read an element's inline declarations, snapping values for cleaner output. Parses
- * the serialized `style.cssText` rather than enumerating `style.item(i)`: a shorthand
+ * the serialized `style.cssText` rather than enumerating `style.item(i)`. A shorthand
  * set to a `var()` value, for example `border-color: var(--border)` or `margin: var(--gap)`, is
  * stored by the cssom as pending-substitution longhands whose `getPropertyValue` returns
  * the empty string, so item-enumeration would emit `border-top-color: ;` and the css
@@ -98,7 +96,7 @@ function readDecls(el: HTMLElement): Array<[string, string]> {
 
 /**
  * Splits a serialized inline-style string into `[property, value]` pairs. Splits on
- * top-level `;` and `:` only: a `;` or `:` inside parentheses, such as a `url(data:...;base64,)`
+ * top-level `;` and `:` only. A `;` or `:` inside parentheses, such as a `url(data:...;base64,)`
  * background or a nested function, or a quoted string is part of the value, never a
  * separator. An `!important` priority is stripped, matching the prior getPropertyValue
  * read. The class rules carry no competing selectors, so priority changes nothing.
@@ -163,17 +161,17 @@ interface FactorGroup {
 /**
  * Factors a shared base class out of near-identical rules. Groups the non-root rules
  * by the largest [prop, value] intersection they share and, for each group above the
- * overlap/size thresholds, emits a base class holding the intersection and demotes each
+ * overlap and size thresholds, emits a base class holding the intersection and demotes each
  * member to a modifier carrying only its remaining declarations. Every member element
  * then references `base base--modifier`, or just `base` when its modifier is empty.
  *
- * Render-neutral by construction: all selectors are flat single classes of equal
+ * Render-neutral by construction. All selectors are flat single classes of equal
  * specificity, and the family guard, see familyGuardedBase, never splits a
- * shorthand/longhand family across the base and a modifier, so no property appears in
+ * shorthand or longhand family across the base and a modifier, so no property appears in
  * both rules for one element and the base-then-modifier order cannot change a used
  * value. The element resolves to exactly its original declaration set.
  *
- * Deterministic for byte-stable output: candidates are processed in class-name order
+ * Deterministic for byte-stable output. Candidates are processed in class-name order
  * with a fixed greedy intersection, no enumeration-order or random dependence.
  *
  * @param block - the bem block base, used to name the generated base classes
@@ -191,7 +189,7 @@ function factorBaseClasses(
 	if (groups.length === 0) return { rules, renames: new Map() };
 
 	const renames = new Map<string, string>();
-	const dropped = new Set<ClassRule>(); // Members whose modifier is empty: base only.
+	const dropped = new Set<ClassRule>(); // Members whose modifier is empty, base only.
 	const baseOf = new Map<ClassRule, ClassRule>(); // Member -> its base rule.
 
 	for (const group of groups) {
@@ -274,7 +272,7 @@ function buildGroups(rules: ClassRule[]): FactorGroup[] {
 		const guarded = familyGuardedBase(base, members);
 		if (guarded.size < MIN_SHARED_DECLS) continue;
 		for (const member of members) assigned.add(member);
-		// Order the base by the seed's original declaration order: deterministic, and it
+		// Order the base by the seed's original declaration order, deterministic, and it
 		// preserves intra-family order for the conflict-free families left in the base.
 		const baseDecls = seed.decls.filter(([p, v]) => guarded.get(p) === v);
 		groups.push({ base: baseDecls, members });
@@ -297,7 +295,7 @@ function intersectDecls(base: Map<string, string>, decls: Array<[string, string]
  * declaration in the same member is render-significant, so hoisting it into the base
  * (which is emitted before every modifier) while its partner stays in a modifier could
  * reorder them and change the used value. Order matters exactly when two declarations
- * share a longhand: a shorthand and one of the longhands it sets, for example `border` and
+ * share a longhand, a shorthand and one of the longhands it sets, for example `border` and
  * `border-color`, or `padding` and `padding-top`, where whichever comes later wins for the
  * shared longhand. When a member holds such a pair both properties are excluded from the
  * base and kept whole inside each modifier, preserving the member's original order.
@@ -337,7 +335,7 @@ function familyGuardedBase(base: Map<string, string>, members: ClassRule[]): Map
 }
 
 /**
- * Whether two declarations' relative order changes the result, asked of the engine: it
+ * Whether two declarations' relative order changes the result, asked of the engine. It
  * sets them on a throwaway style in both orders and compares the resulting declaration
  * blocks. Equal blocks mean the two are independent and safe to separate. Different
  * blocks mean they share a longhand one overrides, so order is significant. A false
@@ -393,13 +391,13 @@ function applyBaseClasses(elements: HTMLElement[], renames: Map<string, string>)
 	}
 }
 
-/** Flat css: one rule per generated class. */
+/** Flat css, one rule per generated class. */
 function cssText(rules: ClassRule[]): string {
 	return rules.map((r) => `.${r.className} {\n${declLines(r.decls)}\n}`).join('\n\n');
 }
 
 /**
- * Nested scss: the block rule with its element rules nested via `&__...`. Bem
+ * Nested scss, the block rule with its element rules nested via `&__...`. Bem
  * names are flat regardless of dom depth, so every element rule nests one level
  * under the block.
  */
@@ -419,7 +417,7 @@ function declLines(decls: Array<[string, string]>, indent = 1): string {
 	return decls.map(([p, v]) => `${pad}${p}: ${v};`).join('\n');
 }
 
-/** The @font-face/@keyframes block, prefixed with a blank line if present. */
+/** The @font-face and @keyframes block, prefixed with a blank line if present. */
 function atRulesAppendix(captured: Captured): string {
 	const at = atRulesCss(captured);
 	return at ? `\n\n${at}` : '';
@@ -433,7 +431,7 @@ function firstClassOrTag(el: Element): string {
 
 /**
  * Lowercase, hyphenate, and trim a token for use in a class name. A leading digit is
- * prefixed with an underscore: a css class selector cannot start with an unescaped
+ * prefixed with an underscore. A css class selector cannot start with an unescaped
  * digit, so a hashed author class like `15kfc`, common in css-in-js, would otherwise
  * emit the invalid selector `.15kfc`, which the browser silently ignores, leaving the
  * snip unstyled. Underscore is a valid identifier start, so `._15kfc` renders.
@@ -447,7 +445,7 @@ function sanitize(name: string): string {
 }
 
 /**
- * The minimum number of declarations a group must share for factoring to pay off: a
+ * The minimum number of declarations a group must share for factoring to pay off. A
  * smaller overlap is not worth the extra base rule and class tokens, so it is left as
  * separate rules.
  */

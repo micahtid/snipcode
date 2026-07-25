@@ -1,31 +1,25 @@
 /**
- * components/inspect/InspectCard.tsx: the shared inspector card
+ * The shared inspector card.
  *
- * Pipeline position: n/a, ui only
- * Reads from Captured: n/a
- * Writes to Captured: n/a
- *
- * Principles applied: none, ui only.
- *
- * Why this exists: the fonts, colors, and assets views are the same card shape, a
- * fixed preview slot beside a name and a meta line, with one click action that
- * copies or downloads and flashes a brief confirmation. Defining it once keeps the
- * spacing, hover, and the copied/downloaded feedback identical across all three
- * grids. Each grid supplies only the preview, the labels, and the action.
+ * The fonts, colors, and assets views are the same card shape, a fixed preview slot beside a
+ * name and a meta line, with one click action that copies or downloads and flashes a brief
+ * confirmation. Defining it once keeps the spacing, hover, and the copied or downloaded
+ * feedback identical across all three grids. Each grid supplies only the preview, the labels,
+ * and the action.
  */
 import { useState, type ReactNode } from 'react';
 import { Check } from 'lucide-react';
 import { COLORS, FLASH_MS } from '../../theme';
 
 interface InspectCardProps {
-	/** The fixed-size preview: a font sample, a color swatch, or a thumbnail. */
+	/** The fixed-size preview, a font sample, a color swatch, or a thumbnail. */
 	preview: ReactNode;
 	name: string;
 	/** The muted second line. Pass '' to show none, such as a color with no ai role. */
 	meta: string;
 	/** Runs on click, either a copy or a download. The card flashes `feedback` once it resolves. */
 	onActivate: () => void | Promise<void>;
-	/** The confirmation shown briefly after a successful action ("Copied" / "Downloaded"). */
+	/** The confirmation shown briefly after a successful action, such as "Copied" or "Downloaded". */
 	feedback: string;
 	/** When true, the confirmation reads in the plain meta style, with no check icon or accent colour. */
 	subtleFeedback?: boolean;

@@ -1,11 +1,11 @@
 /**
- * minimize/reset.ts: inject the canonical reset preamble
+ * Inject the canonical reset preamble.
  *
- * Pipeline position: minimize, after var inlining and before the closing prune rerun
- * Reads from Captured: page.viewport via the oracle, plus warnings on graceful skip
- * Writes to Captured: nothing. It transforms the stylesheet string.
+ * This runs in the minimize phase, after var inlining and before the closing prune rerun. It
+ * reads page.viewport from Captured through the oracle and appends warnings on a graceful
+ * skip, writing nothing and transforming the stylesheet string.
  *
- * Why this exists: the reproduce phase bakes `box-sizing: border-box` onto every rule,
+ * The reproduce phase bakes `box-sizing: border-box` onto every rule,
  * restates the inherited font on every control, and repeats the same link, list, and button
  * zeroing on element after element, because it copies each element's full computed style. A
  * human writes the lines everyone knows once, at the top, and lets the cascade carry them.

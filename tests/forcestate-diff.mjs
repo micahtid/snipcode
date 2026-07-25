@@ -1,9 +1,10 @@
-// Forced-state neutrality check: force a pseudo-state on a marker in two output.html files,
-// the pre- and post-change renders from the same capture, and pixel-diff the result. Used to
+// Forced-state neutrality check that forces a pseudo-state on a marker in two output.html files,
+// the pre- and post-change renders from the same capture, and pixel-diffs the result. Used to
 // verify a transform the resting oracle cannot see, such as the withheld-rule merge,
 // leaves the interactive-state render unchanged. Zero diff is the pass.
 //
-// Usage: node tests/forcestate-diff.mjs <pre.html> <post.html> <markerSelector> <w> <h> <state>
+// Usage
+//   node tests/forcestate-diff.mjs <pre.html> <post.html> <markerSelector> <w> <h> <state>
 //   state is a comma list of forced pseudo-classes, e.g. hover  or  focus-visible  or  hover,active
 import { chromium } from 'playwright';
 import pixelmatch from 'pixelmatch';

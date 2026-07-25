@@ -1,11 +1,11 @@
 /**
- * minimize/normalize.ts: shorthand folding + human property order
+ * Shorthand folding and human property order.
  *
- * Pipeline position: minimize, after prune and before hoist
- * Reads from Captured: page.viewport via the oracle, plus warnings on graceful skip
- * Writes to Captured: nothing. It transforms the minimized stylesheet string.
+ * This runs in the minimize phase, after prune and before hoist. It reads page.viewport from
+ * Captured through the oracle and appends warnings on a graceful skip, writing nothing and
+ * transforming the minimized stylesheet string.
  *
- * Why this exists: the pruned stylesheet still reads like a machine dump. Each rule lists
+ * The pruned stylesheet still reads like a machine dump. Each rule lists
  * the longhands the reproduce phase baked, in computed-style order, so a box's four
  * margins sit apart from its four paddings and a border is spelled out as twelve
  * declarations. A human writes the shorthand and groups related properties. This phase
@@ -69,7 +69,7 @@ function rank(prop: string): number {
 }
 
 /**
- * Normalizes a pruned stylesheet: folds longhand families to shorthands and orders each
+ * Normalizes a pruned stylesheet, folding longhand families to shorthands and ordering each
  * rule's declarations like a human would. Graceful by contract, returning the input
  * unchanged on any infrastructure failure or if the reorder is not render-neutral.
  *
@@ -162,7 +162,7 @@ function dropCoveredLonghands(styleRule: CSSStyleRule, scratch: CSSStyleDeclarat
 			continue; // Redundant restatement of what the shorthand already sets.
 		}
 		kept.push(seg.decl);
-		covered.delete(physical); // This longhand now governs the side; a later shorthand may re-cover it.
+		covered.delete(physical); // This longhand now governs the side, so a later shorthand may re-cover it.
 	}
 	if (kept.length !== segs.length) styleRule.style.cssText = kept.join('; ');
 }

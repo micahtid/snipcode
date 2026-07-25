@@ -1,11 +1,11 @@
 /**
- * minimize/merge.ts: merge identical rules into selector lists
+ * Merge identical rules into selector lists.
  *
- * Pipeline position: minimize, after normalize and before relax
- * Reads from Captured: page.viewport via the oracle, plus warnings on graceful skip
- * Writes to Captured: nothing. It transforms the normalized stylesheet string.
+ * This runs in the minimize phase, after normalize and before relax. It reads page.viewport
+ * from Captured through the oracle and appends warnings on a graceful skip, writing nothing
+ * and transforming the normalized stylesheet string.
  *
- * Why this exists: the reproduce phase gives every element its own generated class and
+ * The reproduce phase gives every element its own generated class and
  * rule, so a grid of eight cards styled the same emits the same declaration block eight
  * times. Pruning and normalizing can also drive two rules that differed to the identical
  * body. A human writes that body once against a selector list. This phase collapses every

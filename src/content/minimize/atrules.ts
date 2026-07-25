@@ -1,11 +1,10 @@
 /**
- * minimize/atrules.ts: dead at-rule purge
+ * Dead at-rule purge.
  *
- * Pipeline position: minimize, after merge and before format
- * Reads from Captured: nothing
- * Writes to Captured: nothing. It transforms the merged stylesheet string.
+ * This runs in the minimize phase, after merge and before format. It reads nothing from
+ * Captured and writes nothing, transforming the merged stylesheet string.
  *
- * Why this exists: a tailwind-based sheet registers dozens of custom properties with
+ * A tailwind-based sheet registers dozens of custom properties with
  * `@property` (67 to 123 per bundle). After prune deletes the declarations that used them,
  * almost all of those registrations govern nothing, because their property name appears
  * nowhere else in the sheet. A registration whose name is never set, read by var(), or
@@ -33,7 +32,7 @@
  */
 import { serializeRules } from './declarations';
 
-/** A grouping rule (@media/@layer/@supports) whose child rules can be walked and deleted. */
+/** A grouping rule (@media, @layer, or @supports) whose child rules can be walked and deleted. */
 type RuleContainer = CSSStyleSheet | CSSGroupingRule;
 
 /** One registered @property in the parsed sheet, recording where it sits so it can be deleted. */
@@ -73,7 +72,7 @@ export function purgeAtRules(css: string): string {
 
 /**
  * Recursively collects every `@property` rule under a container, into `out`. A property rule
- * is detected structurally, by its `name`/`syntax` descriptor fields, because CSSPropertyRule
+ * is detected structurally, by its `name` and `syntax` descriptor fields, because CSSPropertyRule
  * is absent from some dom lib versions. Grouping rules are descended so a registration nested
  * in an @layer or @media is found too.
  */
@@ -90,7 +89,7 @@ function collectPropertyRules(container: RuleContainer, out: PropertyRuleRef[]):
 	}
 }
 
-/** True when a rule can contain and delete child rules, an @media/@layer/@supports block. */
+/** True when a rule can contain and delete child rules, an @media, @layer, or @supports block. */
 function isGroupingRule(rule: CSSRule): rule is CSSGroupingRule {
 	return 'cssRules' in rule && typeof (rule as CSSGroupingRule).deleteRule === 'function';
 }

@@ -1,25 +1,20 @@
 /**
- * inspect/prompts.ts: the byok ai prompts for colors and schema
+ * The byok ai prompts for colors and schema.
  *
- * Pipeline position: inspect, page-scoped. This is the prompt text the ai pass sends.
- * Reads from DOM: nothing. These are pure string builders.
- * Writes to: nothing. These are pure string builders.
- *
- * Principles applied: none. This is prompt text.
- *
- * Why this exists: two inspectors gain an optional ai pass (inspect/ai.ts) and
- * each needs a prompt. The colors prompt asks the model to assign a semantic role
- * to every extracted color. The schema prompt synthesizes the raw page schema
- * into a design-system json. Keeping the prompt text out of the orchestrator keeps
- * ai.ts short and lets the prompts be read on their own. The colors prompt is
- * trimmed to the role-only output the panel renders. The schema prompt is ported
- * verbatim from the v1 server (marketing-website/lib/schema-prompts.ts), which is
- * the synthesis behavior and must not drift. The style-map abbreviations the
- * schema prompt documents must match inspect/schema/fingerprint.ts exactly.
+ * This is the prompt text the ai pass sends, in the inspect phase, page-scoped. It reads nothing
+ * from the DOM and writes nothing, these are pure string builders. Two inspectors gain an optional
+ * ai pass (inspect/ai.ts) and each needs a prompt. The colors prompt asks the model to assign a
+ * semantic role to every extracted color. The schema prompt synthesizes the raw page schema into
+ * a design-system json. Keeping the prompt text out of the orchestrator keeps ai.ts short and lets
+ * the prompts be read on their own. The colors prompt is trimmed to the role-only output the panel
+ * renders. The schema prompt is ported verbatim from the v1 server
+ * (marketing-website/lib/schema-prompts.ts), which is the synthesis behavior and must not drift.
+ * The style-map abbreviations the schema prompt documents must match inspect/schema/fingerprint.ts
+ * exactly.
  */
 
 /**
- * Builds the colors prompt: assign a semantic role to each extracted color.
+ * Builds the colors prompt, assigning a semantic role to each extracted color.
  *
  * @param colorData - json string of { colors: [{ hex, count }], cssVariables }
  */
@@ -361,7 +356,7 @@ SECTION FIDELITY: The sections array is a complete manifest of the page. A code 
 `;
 
 /**
- * Builds the schema synthesis prompt: the template plus the page schema data.
+ * Builds the schema synthesis prompt, the template plus the page schema data.
  *
  * @param schemaData - the optimized page schema, serialized as json
  */

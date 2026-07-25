@@ -1,11 +1,11 @@
 /**
- * minimize/inline.ts: inline the custom-property dumps
+ * Inline the custom-property dumps.
  *
- * Pipeline position: minimize, after the at-rule purge and before format
- * Reads from Captured: page.viewport via the oracle, plus warnings on graceful skip
- * Writes to Captured: nothing. It transforms the stylesheet string.
+ * This runs in the minimize phase, after the at-rule purge and before format. It reads
+ * page.viewport from Captured through the oracle and appends warnings on a graceful skip,
+ * writing nothing and transforming the stylesheet string.
  *
- * Why this exists: the reproduce phase bakes a wall of custom properties (`--text-sm`,
+ * The reproduce phase bakes a wall of custom properties (`--text-sm`,
  * `--border`, `--spacing`) onto the emitted rules and then reads them back through var(),
  * an indirection a human writing this by hand would not keep. This phase resolves each
  * `var(--x)` to the value it actually holds at that site, read from the mounted frame, and
@@ -21,7 +21,7 @@
  * surviving var() reference governs nothing, so dropping its declaration is render-neutral.
  *
  * A custom property is left alone, both its var() references and its declaration, when it
- * carries motion the resting frame cannot see: named inside an @keyframes, listed in a
+ * carries motion the resting frame cannot see, whether named inside an @keyframes, listed in a
  * transition or animation, or redefined by a state or pseudo rule. That last case matters
  * most. A resting `color: var(--x)` is dynamic, so if a :hover rule redefines `--x` the color
  * follows it on hover. Inlining the resting reference to its resting sample would freeze the
@@ -69,8 +69,8 @@ export async function inlineVars(css: string, captured: Captured, markup: string
 
 /**
  * The custom-property names that must not be inlined or dropped because their value carries
- * motion the resting frame cannot sample: a name written inside an @keyframes block, or a
- * name listed in a transition/animation value. A bare `@property` registration is not itself
+ * motion the resting frame cannot sample, meaning a name written inside an @keyframes block, or a
+ * name listed in a transition or animation value. A bare `@property` registration is not itself
  * a reason to hold, because a registered name nothing animates or reads governs no motion, and
  * holding it would keep alive the very dead pair the at-rule purge exists to drop. The real
  * motion carriers are keyframe writes, transition and animation mentions, and the withheld

@@ -1,4 +1,4 @@
-// Local fixture harness: the drift-free regression gate.
+// Local fixture harness, the drift-free regression gate.
 //
 // The 23-bundle live corpus drifts run to run (sites change, captures vary), so a
 // raw SSIM delta there can mislead. These fixtures are static local pages served
@@ -7,13 +7,13 @@
 // root cause (token resolution, inherited typography, background image, lazy image,
 // scroll reveal, interactive-state re-emit).
 //
-// For each fixture this harness:
+// For each fixture this harness does three things.
 //   1. captures the native browser render of the element (the ground truth),
 //   2. snips it through the built extension and grades the output against that truth,
 //   3. snips it a second time and asserts the two outputs are byte-identical
 //      (the determinism gate, meaning the transform must be deterministic).
 //
-// Requires `npm run build` so dist/ is current. Run: `node tests/fixtures.mjs`.
+// Requires `npm run build` so dist/ is current. Run `node tests/fixtures.mjs`.
 
 import { chromium } from 'playwright';
 import sharp from 'sharp';

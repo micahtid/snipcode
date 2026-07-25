@@ -1,21 +1,17 @@
 /**
- * capture/gate.ts: website-builder gate
+ * Website-builder gate.
  *
- * Pipeline position: capture (final step, refuses unsupported pages)
- * Reads from Captured: root (runs before Captured exists, on the live element)
- * Writes to Captured: n/a (gates the pipeline before it builds Captured)
+ * This is the final capture step, and it refuses unsupported pages. It reads the live picked
+ * element and gates the pipeline before Captured is built, so it writes nothing. Framer, wix, webflow, elementor, and readymag render runtime-dependent,
+ * non-portable markup, such as scale-to-fit transforms, hashed class soups, and sprite refs to
+ * document-root <symbol>s. Snipping them produces broken output, so v2 refuses with a static
+ * "unsupported" message instead of degrading silently. Detection is purely structural, using
+ * data-* rendering-chrome attributes and class-name fingerprints, sampled from a bounded
+ * subtree walk. Ported, rewritten, from v1 vision/builder-detection.ts. The v1 version routed
+ * to a vision model, but v2 drops that path and blocks.
  *
- * Why this exists: framer / wix / webflow / elementor / readymag render runtime-
- * dependent, non-portable markup: scale-to-fit transforms, hashed class soups,
- * sprite refs to document-root <symbol>s. Snipping them produces broken output,
- * so v2 refuses with a static "unsupported" message instead of degrading
- * silently. Detection is purely structural: data-*
- * rendering-chrome attributes and class-name fingerprints, sampled from a
- * bounded subtree walk. Ported, rewritten, from v1 vision/builder-detection.ts.
- * The v1 version routed to a vision model, but v2 drops that path and blocks.
- *
- * Note: the runtime Set in collectSampleClassNames dedups sampled class names. It
- * is not a hardcoded tag/role/property enumeration.
+ * The runtime Set in collectSampleClassNames dedups sampled class names. It is not a
+ * hardcoded tag, role, or property enumeration.
  */
 
 /** The builders v2 refuses, plus the not-a-builder sentinel. */
@@ -92,7 +88,7 @@ function unsupportedMessage(builder: BuilderName): string {
 	);
 }
 
-/** Framer: data-framer-* rendering chrome + framer-* class prefixes. */
+/** Framer, data-framer-* rendering chrome plus framer-* class prefixes. */
 function detectFramer(root: Element, classes: string[]): GateSignal[] {
 	const signals: GateSignal[] = [];
 	if (root.hasAttribute('data-framer-name') || root.querySelector('[data-framer-name]')) {
@@ -110,7 +106,7 @@ function detectFramer(root: Element, classes: string[]): GateSignal[] {
 	return signals;
 }
 
-/** Wix: _wix-/_Capitalized_ class soups, data-mesh-id, comp-* prefixes. */
+/** Wix, _wix- and _Capitalized_ class soups, data-mesh-id, and comp-* prefixes. */
 function detectWix(root: Element, classes: string[]): GateSignal[] {
 	const signals: GateSignal[] = [];
 	if (classes.some((c) => /^_wix-/.test(c) || /^_[A-Z][a-zA-Z0-9]+_/.test(c))) {
@@ -125,7 +121,7 @@ function detectWix(root: Element, classes: string[]): GateSignal[] {
 	return signals;
 }
 
-/** Webflow: data-w-id + w-{button|nav|container|row|col|tab} utility classes. */
+/** Webflow, data-w-id plus w-{button|nav|container|row|col|tab} utility classes. */
 function detectWebflow(root: Element, classes: string[]): GateSignal[] {
 	const signals: GateSignal[] = [];
 	if (root.hasAttribute('data-w-id') || root.querySelector('[data-w-id]')) {
@@ -137,7 +133,7 @@ function detectWebflow(root: Element, classes: string[]): GateSignal[] {
 	return signals;
 }
 
-/** Elementor: data-elementor-type + elementor-* class prefix. */
+/** Elementor, data-elementor-type plus elementor-* class prefix. */
 function detectElementor(root: Element, classes: string[]): GateSignal[] {
 	const signals: GateSignal[] = [];
 	if (root.hasAttribute('data-elementor-type') || root.querySelector('[data-elementor-type]')) {
@@ -149,7 +145,7 @@ function detectElementor(root: Element, classes: string[]): GateSignal[] {
 	return signals;
 }
 
-/** Readymag: rmgs-/rmgr- class prefixes, a readymag-only convention. */
+/** Readymag, rmgs- and rmgr- class prefixes, a readymag-only convention. */
 function detectReadymag(classes: string[]): GateSignal[] {
 	if (classes.some((c) => /^rmgs-/.test(c) || /^rmgr-/.test(c))) {
 		return [{ id: 'readymag-class-prefix', description: 'rmgs-/rmgr- class prefix', weight: 0.5 }];

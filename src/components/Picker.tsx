@@ -1,28 +1,26 @@
 /**
- * components/Picker.tsx: sidebar picker control
+ * Sidebar picker control.
  *
- * Pipeline position: triggers capture
- * Reads from Captured: n/a
- * Writes to Captured: n/a
+ * Triggered from the sidebar, this is a split action whose main segment runs the active mode
+ * and whose chevron segment opens a small menu above it to choose the mode. Two groups of modes
+ * share the menu, the element picks, snip and assistive,
+ * which inject the page overlay so the user selects an element, and the page scans, colors,
+ * fonts, assets, and schema, which read the whole page at once. The main button's label is the
+ * active-mode indicator. Both groups lift their in-flight state up to App, "picking" for
+ * element picks and "scanning" for page scans, so App clears each when its result arrives and
+ * the button stays in its loading state until then. Element picks additionally wire the
+ * panel-side esc-to-cancel, while page scans need no overlay. The heavy lifting lives in the
+ * content script, meaning overlay plus screenshot for picks and extraction for scans. This
+ * component owns only the mode and menu state.
  *
- * Principles applied: none. Ui only.
- *
- * Why this exists: the picker is triggered from the sidebar.
- * This is that trigger: a split action whose main segment runs the active mode and
- * whose chevron segment opens a small menu above it to choose the mode. Two groups
- * of modes share the menu: the element picks, snip / assistive, which inject the
- * page overlay so the user selects an element, and the page scans, colors / fonts /
- * assets / schema, which read the whole page at once. The main button's label
- * is the active-mode indicator. Both groups lift their in-flight state up to App,
- * "picking" for element picks and "scanning" for page scans, so App clears each when
- * its result arrives and the button stays in its loading state until then. Element
- * picks additionally wire the panel-side esc-to-cancel; page scans need no overlay.
- * The heavy lifting lives in the content script, meaning overlay plus screenshot for
- * picks and extraction for scans. This component owns only the mode and menu state.
+ * The main button's label doubles as the pick's status line. It names the active mode when
+ * idle, hints at esc while an element is being chosen, and counts a multi-select batch element
+ * by element from the progress App passes down.
  */
 import { Fragment, useState } from 'react';
 import { Check, ChevronUp } from 'lucide-react';
 import { START_SCAN, START_PICKER } from '../content/types';
+import type { BatchProgress } from '../content/types';
 import type { ScanKind } from '../content/inspect/types';
 import { FONT_UI } from '../theme';
 
@@ -36,6 +34,8 @@ interface PickerProps {
 	picking: boolean;
 	/** True once an element is picked and the pipeline is running; owned by App. */
 	processing: boolean;
+	/** How far a multi-select batch has got, or null when the snip is a single element. */
+	progress: BatchProgress | null;
 	/** Report whether a pick is now in flight: true on start, false if start failed. */
 	onPickingChange: (picking: boolean) => void;
 	/** True while a page scan is in progress; owned by App, cleared when its result arrives. */
@@ -96,7 +96,7 @@ async function sendToActiveTab(message: Record<string, unknown>): Promise<boolea
 	}
 }
 
-export function Picker({ mode, onModeChange, picking, processing, onPickingChange, scanning, onScanningChange }: PickerProps) {
+export function Picker({ mode, onModeChange, picking, processing, progress, onPickingChange, scanning, onScanningChange }: PickerProps) {
 	const [menuOpen, setMenuOpen] = useState(false);
 
 	const active = MODES.find((m) => m.id === mode) ?? MODES[0]!;
@@ -108,7 +108,7 @@ export function Picker({ mode, onModeChange, picking, processing, onPickingChang
 			if (!started) onPickingChange(false); // Could not reach the page, so leave select mode.
 			return;
 		}
-		// Page scan: hold the "Scanning..." loading state until the content script ships its
+		// A page scan holds the "Scanning..." loading state until the content script ships its
 		// result and App swaps in the InspectPanel, exactly as a pick holds until its snip.
 		onScanningChange(true);
 		const started = await sendToActiveTab({ type: START_SCAN, scan: mode as ScanKind });
@@ -116,11 +116,16 @@ export function Picker({ mode, onModeChange, picking, processing, onPickingChang
 	};
 
 	const busy = picking || scanning;
-	// While a pick is in flight the label shows its phase: the cancellable "Selecting" hint until
-	// an element is picked, then "Snipping" once the pipeline is running and cancelling no longer applies.
+	// While a pick is in flight the label shows its phase, the cancellable "Selecting" hint until
+	// an element is picked, then "Snipping" once the pipeline is running and cancelling no longer
+	// applies. A multi-select batch counts its elements there instead, so a long run of several
+	// snips reads as progress rather than as a hang. Multi-select is taught by the panel's shift
+	// banner instead, so the label carries only the cancel hint.
 	const mainLabel = picking
 		? processing
-			? 'Snipping…'
+			? progress
+				? `Snipping ${Math.min(progress.done + 1, progress.total)} of ${progress.total}…`
+				: 'Snipping…'
 			: 'Selecting… (Esc to Cancel)'
 		: scanning
 			? 'Scanning…'

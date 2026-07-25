@@ -1,7 +1,7 @@
-// Grader orchestrator. Wraps render-diff with run history and a few flags:
+// Grader orchestrator. Wraps render-diff with run history and a few flags.
 //
 // --target <file> which file in each bundle to score (default output.html).
-// --cached no-op: we score files already on disk (kept for forward compat).
+// --cached no-op, we score files already on disk (kept for forward compat).
 // --bisect compare per-case scores between the last two scores.jsonl
 // entries with the same target, then print regressions.
 // --note <text> free-form label saved on the history entry (e.g. "v2 baseline").
@@ -32,7 +32,7 @@ function isBlank(c) {
 }
 
 /**
- * Reports whether the corpus meets the exit condition: no blanks, mean SSIM
+ * Reports whether the corpus meets the exit condition of no blanks, mean SSIM
  * at or above target, and no single bundle below the floor. Prints the verdict and
  * lists every bundle that still fails a criterion.
  */
@@ -80,7 +80,7 @@ async function appendHistory(entry) {
 }
 
 // Compare the last two runs with the same target. Report cases whose pixel or
-// ssim dropped by more than the threshold, plus new/dropped cases.
+// ssim dropped by more than the threshold, plus new and dropped cases.
 async function bisect(targetOverride) {
 	const history = await readHistory();
 	if (history.length < 2) {

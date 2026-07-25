@@ -1,22 +1,18 @@
 /**
- * content/llm.ts: the shared client for the background byok llm broker
+ * The shared client for the background byok llm broker.
  *
- * Pipeline position: n/a, cross-cutting, used by the polish phase and the inspect ai pass
- * Reads from Captured: n/a
- * Writes to Captured: n/a
- *
- * It exists because content scripts are bound by the host page's csp and cannot reach
- * provider hosts, so every byok llm call is delegated to the background worker over an
- * LLM_REQUEST message. Both the polish phase and the inspect ai pass send that exact
- * request and read back the same { text, usage }, or an error. This is that one
- * transport. Each caller parses the reply into its own shape and decides skip-vs-warn.
+ * This is cross-cutting, used by the polish phase and the inspect ai pass. Content scripts
+ * are bound by the host page's csp and cannot reach provider hosts, so every byok llm call is
+ * delegated to the background worker over an LLM_REQUEST message. Both send that exact
+ * request and read back the same { text, usage }, or an error. This is that one transport. Each caller parses the reply into its own shape and
+ * decides whether to skip or warn.
  */
 import type { Provider, TokenUsage } from './types';
 
 /** The error code the broker returns when no key is stored for the provider. */
 export const NO_KEY = 'NO_KEY_CONFIGURED';
 
-/** The broker reply: text is null on any failure, with the error message and any billed usage alongside. */
+/** The broker reply. text is null on any failure, with the error message and any billed usage alongside. */
 export interface LlmReply {
 	text: string | null;
 	error?: string;
@@ -25,7 +21,7 @@ export interface LlmReply {
 
 /**
  * Asks the background broker to call the provider and return its raw reply text.
- * On any failure such as no key, network, provider, or empty/non-json, the text is null and the
+ * On any failure such as no key, network, provider, or empty or non-json, the text is null and the
  * broker's error message is returned alongside it, so the caller can both skip cleanly
  * and report the cause. A failed-but-billed reply also returns its token usage so the
  * spent tokens still count toward the session total.

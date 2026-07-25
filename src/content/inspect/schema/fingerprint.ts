@@ -1,18 +1,14 @@
 /**
- * inspect/schema/fingerprint.ts: compact style fingerprints + abbreviations
+ * Compact style fingerprints and abbreviations.
  *
- * Pipeline position: inspect, page-scoped. It reads the live dom directly and does not run the element pipeline.
- * Reads from DOM: document/window. This runs live, on per-element computed styles.
- * Writes to: nothing. This is pure computation.
- *
- * Principles applied: none. This is computation.
- *
- * Why this exists: the schema collapses elements that look identical into a single
- * style-map entry. A fingerprint is the sorted, abbreviated list of an element's
- * non-default design properties, so two elements with the same fingerprint share a
- * style. The abbreviations keep the style map compact, and they must match the
- * abbreviation legend in inspect/prompts.ts so the ai pass can decode them. Ported
- * by rewriting from v1 schema/style-fingerprint.ts.
+ * This is a page-scan inspector that reads the live dom directly and does not run the element
+ * pipeline. It reads document and window for per-element computed styles and writes nothing, a
+ * pure computation. The schema collapses elements that look identical into a single
+ * style-map entry. A fingerprint is the sorted, abbreviated list of an element's non-default
+ * design properties, so two elements with the same fingerprint share a style. The abbreviations
+ * keep the style map compact, and they must match the abbreviation legend in inspect/prompts.ts
+ * so the ai pass can decode them. This was ported and rewritten from v1
+ * schema/style-fingerprint.ts.
  */
 
 /** The design-relevant properties a fingerprint is built from. */
@@ -93,7 +89,7 @@ export interface FingerprintResult {
 }
 
 /**
- * Computes an element's style fingerprint: the sorted, abbreviated list of its
+ * Computes an element's style fingerprint, the sorted, abbreviated list of its
  * non-default design properties. The same fingerprint means the same style.
  */
 export function computeFingerprint(element: Element): FingerprintResult {

@@ -1,30 +1,27 @@
 /**
- * features/images.ts: responsive images + background images
+ * Responsive images and background images.
  *
- * Pipeline position: reconcile
- * Reads from Captured: root, clone, bakedStyles
- * Writes to Captured: clone for img src/srcset and <picture>, bakedStyles for bg urls, and warnings
+ * This is a reconcile-phase feature handler for image url resolution. It reads root,
+ * clone, and bakedStyles from Captured and writes clone for img src, srcset, and
+ * <picture>, bakedStyles for bg urls, and warnings.
  *
- * A feature handler for image url resolution.
+ * The relevant specs are
+ * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/picture and
+ * https://developer.mozilla.org/en-US/docs/Web/CSS/background-image. It detects an
+ * <img> with srcset or inside <picture>, or a baked background-image with a relative
+ * url(), and early-returns when none apply. It pins each <img> to the browser-resolved
+ * currentSrc, which is the image that rendered at the captured viewport, and
+ * drops srcset, sizes, and <source>s so it renders deterministically. It also
+ * absolutizes background-image url()s. It mutates the clone and bakedStyles only and
+ * does no network work (the handler contract).
  *
- * CSS/spec reference: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/picture
- * and https://developer.mozilla.org/en-US/docs/Web/CSS/background-image
- * Detection criterion: an <img> with srcset or inside <picture>, or a baked
- * background-image with a relative url(). It early-returns when none apply.
- * Transform contract: it pins each <img> to the browser-resolved currentSrc, which
- * is the image that actually rendered at the captured viewport, and drops srcset,
- * sizes, and <source>s so it renders deterministically. It also absolutizes
- * background-image url()s. It mutates the clone and bakedStyles only and does no
- * network work (the handler contract).
- *
- * Why this exists: srcset and <picture> pick a source from viewport and dpr at
- * render time. Once reparented, the browser may pick a different one, or none,
- * changing the pixels. Pinning currentSrc locks the captured-viewport image.
- * Background-image urls are usually relative to the source page and 404 when pasted,
- * so absolutizing fixes that. Cross-origin image urls render fine without cors,
- * since only canvas reads need it. So no base64 inline is required for fidelity, and
- * feature handlers may not fetch anyway. Truly unreachable assets get a warning
- * instead.
+ * srcset and <picture> pick a source from viewport and dpr at render time. Once
+ * reparented, the browser may pick a different one, or none, changing the pixels.
+ * Pinning currentSrc locks the captured-viewport image. Background-image urls are
+ * usually relative to the source page and 404 when pasted, so absolutizing fixes that.
+ * Cross-origin image urls render fine without cors, since only canvas reads need it. So
+ * no base64 inline is required for fidelity, and feature handlers may not fetch anyway.
+ * Truly unreachable assets get a warning instead.
  */
 import type { Captured } from '../../types';
 
@@ -33,7 +30,7 @@ const URL_IN_VALUE = /url\(\s*(['"]?)([^'")]+)\1\s*\)/g;
 /**
  * Pins responsive images and absolutizes background-image urls.
  *
- * @param captured - clone + bakedStyles are mutated in place
+ * @param captured - clone and bakedStyles are mutated in place
  */
 export function apply(captured: Captured): Captured {
 	const base = document.baseURI || location.href;
@@ -47,7 +44,7 @@ export function apply(captured: Captured): Captured {
 			const cl = cloneImgs[i];
 			if (!orig || !cl) continue;
 			const resolved = orig.currentSrc || orig.src;
-			// Don't pin a placeholder over a real source: when a lazy image never loaded
+			// Don't pin a placeholder over a real source. When a lazy image never loaded
 			// its real src on the live page (no loader ran), currentSrc is still the 1x1
 			// spacer, but cloneElement already promoted the clone's src from data-src. Keep
 			// that promoted real src rather than overwriting it with the spacer.
@@ -89,7 +86,7 @@ export function apply(captured: Captured): Captured {
 /** Rewrite every relative url() in a value to absolute, and warn on truly opaque refs. */
 function absolutizeUrls(value: string, base: string, captured: Captured): string {
 	return value.replace(URL_IN_VALUE, (match, quote: string, url: string) => {
-		if (/^(data:|blob:|https?:|#)/i.test(url)) return match; // Already absolute/inline/ref
+		if (/^(data:|blob:|https?:|#)/i.test(url)) return match; // Already absolute, inline, or a ref
 		const abs = toAbsolute(url, base);
 		if (!abs) {
 			captured.warnings.push(`images: could not resolve background url ${url}`);
@@ -99,7 +96,7 @@ function absolutizeUrls(value: string, base: string, captured: Captured): string
 	});
 }
 
-/** The empty/spacer srcs a lazy-loader shows before swapping in the real image. */
+/** The empty or spacer srcs a lazy-loader shows before swapping in the real image. */
 function isPlaceholder(src: string): boolean {
 	return !src || src.startsWith('data:image') || src.includes('1x1') || src.includes('placeholder');
 }

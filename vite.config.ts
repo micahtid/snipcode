@@ -6,7 +6,7 @@
  * service worker, icons, preview) into dist/ verbatim.
  *
  * The content script is a separate build (see vite.content.config.ts) because it
- * must be a single self-contained iife with no code-splitting — chrome injects
+ * must be a single self-contained iife with no code-splitting. Chrome injects
  * it as one file, so rollup's default multi-chunk output would break it.
  *
  * Sourcemaps are on for debuggable production builds.
@@ -16,8 +16,8 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
 	plugins: [react()],
-	// public/ is the default static dir; manifest.json + background.js + icons
-	// + preview.* Live there and are copied to dist/ untouched.
+	// public/ is the default static dir. manifest.json, background.js, icons, and
+	// preview.* live there and are copied to dist/ untouched.
 	publicDir: 'public',
 	build: {
 		outDir: 'dist',

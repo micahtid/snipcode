@@ -1,24 +1,22 @@
 /**
- * convert/format.ts: html + css pretty-printer (whitespace-safe)
+ * Html and css pretty-printer (whitespace-safe).
  *
- * Pipeline position: convert
- * Reads from Captured: nothing. It operates on the emitted markup + stylesheet strings.
- * Writes to Captured: nothing. It returns the formatted strings.
- *
+ * This runs in the convert phase. It reads nothing from Captured, operating on the emitted
+ * markup and stylesheet strings, and writes nothing back, returning the formatted strings.
  * Indentation is the only goal. It must never move a pixel.
  *
- * Why this exists: every emitter returns the clone's outerHTML as a single
+ * Every emitter returns the clone's outerHTML as a single
  * unindented line and a stylesheet whose rules are serialized one per line by the
  * cssom in clean.ts. Both are correct but unreadable. This module re-emits them in a
- * prettier shape, but only where doing so is provably render-neutral:
+ * prettier shape, but only where doing so is provably render-neutral.
  *
  * - Markup is re-serialized one element per indented line, but only where whitespace
  *   collapses to nothing. Whitespace between block boxes collapses, so those children
  *   each take their own line. Whitespace around inline content renders as a space, so
  *   any element with inline children or mixed text stays verbatim on one line. A block
  *   element whose only content is text puts that text on its own line, and a block trims
- *   its leading/trailing whitespace. Whitespace-sensitive tags/displays (pre,
- *   textarea, white-space:pre*) and the handler-injected style/svg nodes stay verbatim.
+ *   its leading and trailing whitespace. Whitespace-sensitive tags or displays (pre,
+ *   textarea, white-space:pre*) and the handler-injected style and svg nodes stay verbatim.
  * - The stylesheet is re-emitted one declaration per line. Css is insensitive to
  *   whitespace between declarations and rules, so this never changes rendering.
  * - The reconcile-injected pseudo <style> is lifted out of the markup into the single
@@ -35,15 +33,15 @@
  * Deciding what is reflowable needs each element's effective display, and white-space.
  * The html format carries those on the inline style. The class-based formats such as bem-css
  * carry them in the emitted stylesheet, so this reads the css too and maps each flat
- * class rule to its display/white-space. Without it bem markup looks all-block, having no
- * inline styles, so flex/grid containers go undetected and whole subtrees collapse to
+ * class rule to its display and white-space. Without it bem markup looks all-block, having no
+ * inline styles, so flex and grid containers go undetected and whole subtrees collapse to
  * one line again.
  */
 import type { OutputFormat } from '../types';
 import { isInjected } from '../reconcile/match';
 import { composeDocument } from './html';
 
-/** Html5 void elements: no closing tag, no children. */
+/** Html5 void elements, no closing tag, no children. */
 const VOID_TAGS = new Set([
 	'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
 	'link', 'meta', 'param', 'source', 'track', 'wbr',
@@ -52,7 +50,7 @@ const VOID_TAGS = new Set([
 /**
  * Inline-level tags whose surrounding whitespace renders. A static allowlist,
  * since getComputedStyle is unreliable on the detached parse tree. Everything not listed,
- * including unknown/custom elements, is treated as block.
+ * including unknown or custom elements, is treated as block.
  */
 const INLINE_TAGS = new Set([
 	'a', 'abbr', 'b', 'bdi', 'bdo', 'br', 'cite', 'code', 'data', 'dfn', 'del', 'em',
@@ -73,7 +71,7 @@ const HTML_SHAPED = new Set<OutputFormat>(['html', 'tailwind', 'bem-css', 'bem-s
 /** A bare css identifier that needs no escaping, so a class is safe to use as a selector verbatim. */
 const BARE_IDENT = /^-?[A-Za-z_][\w-]*$/;
 
-/** The resting display + white-space a flat class rule declares, for reflow decisions. */
+/** The resting display and white-space a flat class rule declares, for reflow decisions. */
 interface ClassStyle {
 	display?: string;
 	whiteSpace?: string;
@@ -85,7 +83,7 @@ export function isHtmlShaped(format: OutputFormat): boolean {
 }
 
 /**
- * Assembles the final self-contained document for an html-shaped format: lifts the
+ * Assembles the final self-contained document for an html-shaped format. Lifts the
  * reconcile-injected pseudo <style> out of the markup into the single head stylesheet,
  * pretty-prints the markup and the stylesheet, and composes them. Render-neutral
  * throughout. See liftEmbeddedStyles, formatHtmlMarkup, and formatCss.
@@ -93,7 +91,7 @@ export function isHtmlShaped(format: OutputFormat): boolean {
  * @param html - the polished markup, possibly carrying an injected pseudo <style>
  * @param css - the polished head stylesheet
  * @param warnings - appended to on a markup parse failure
- * @returns the formatted markup, the formatted + merged stylesheet, and the composed document
+ * @returns the formatted markup, the formatted and merged stylesheet, and the composed document
  */
 export function assembleHtmlDocument(html: string, css: string, warnings: string[]): { html: string; css: string; document: string } {
 	const lifted = liftEmbeddedStyles(html);
@@ -142,7 +140,7 @@ function liftEmbeddedStyles(html: string): { markup: string; css: string } {
  * now-redundant marker attribute. Every reference to a re-keyed marker is replaced, so a
  * selector that names the marker more than once, a trigger and its pseudo pair, is fully
  * rewritten. An element whose class is shared, absent, or not a bare identifier keeps its
- * marker, so a rule can never leak onto a sibling. Render-neutral: a unique class selects
+ * marker, so a rule can never leak onto a sibling. Render-neutral. A unique class selects
  * exactly the marked element at the same specificity as the attribute selector.
  *
  * @param markup - the lifted markup, with the injected <style> already removed
@@ -169,7 +167,7 @@ function keyMarkersToClasses(markup: string, css: string, attr: string): { marku
 			const id = el.getAttribute(attr);
 			if (id === null) continue;
 			const unique = Array.from(el.classList).find((name) => classCounts.get(name) === 1 && BARE_IDENT.test(name));
-			if (!unique) continue; // Shared, unnamed, or unsafe class: keep the numeric marker
+			if (!unique) continue; // Shared, unnamed, or unsafe class, keep the numeric marker
 			// Literal global replace keeps the regex-special `["]` characters intact.
 			out = out.split(`[${attr}="${id}"]`).join(`.${unique}`);
 			el.removeAttribute(attr);
@@ -206,7 +204,7 @@ export function formatHtmlMarkup(html: string, css: string, warnings: string[]):
 
 /**
  * Pretty-prints a stylesheet with one declaration per line and a blank line between
- * rules. Render-neutral: css is insensitive to whitespace between declarations and
+ * rules. Render-neutral. Css is insensitive to whitespace between declarations and
  * rules. Re-parses via the cssom, as clean.ts does, for robust handling of @font-face,
  * @keyframes, @media, and pseudo rules. Declarations are split from the rule's own
  * serialized text, never re-derived, so shorthands are preserved exactly. Returns the
@@ -301,17 +299,17 @@ function declarationLines(block: string, depth: number): string {
 }
 
 /**
- * Maps each class to its resting display + white-space by parsing the emitted
- * stylesheet. Only flat single-class rules count: a selector that is one `.<class>`
+ * Maps each class to its resting display and white-space by parsing the emitted
+ * stylesheet. Only flat single-class rules count. A selector that is one `.<class>`
  * with no combinator, no `:pseudo`, and no comma, followed by a block. That deliberately skips
- * @font-face/@keyframes, the polish :hover/:focus-visible rules, and comma/descendant
+ * @font-face and @keyframes, the polish :hover and :focus-visible rules, and comma and descendant
  * selectors, so a class's resting style is never confused with a state rule. The html
  * format, which has no class rules, yields an empty map and falls back to inline styles. The
- * nested bem-scss output never matches the flat pattern and simply yields no info,
+ * nested bem-scss output never matches the flat pattern and yields no info,
  * which is safe, just less indented. The flat bem-css default does match.
  *
  * @param css - the emitted stylesheet
- * @returns a class-name -> resting display/white-space map
+ * @returns a class-name -> resting display and white-space map
  */
 function classStyleMap(css: string): Map<string, ClassStyle> {
 	const map = new Map<string, ClassStyle>();
@@ -341,19 +339,19 @@ function formatElement(el: Element, depth: number, classStyle: Map<string, Class
 	if (VOID_TAGS.has(tag)) return `${pad}${open}`;
 	if (el.childNodes.length === 0) return `${pad}${open}</${tag}>`;
 
-	// A block element whose only content is text: put the trimmed text on its own line.
-	// A block trims its leading/trailing whitespace, so this is render-neutral. Inline or
+	// A block element whose only content is text. Put the trimmed text on its own line.
+	// A block trims its leading and trailing whitespace, so this is render-neutral. Inline or
 	// white-space-preserving elements keep their text inline, since their edge whitespace can
 	// render, or every space is significant.
 	if (isTextOnlyBlock(el, classStyle)) {
 		return `${pad}${open}\n${pad}\t${(el.textContent ?? '').trim()}\n${pad}</${tag}>`;
 	}
 
-	// Not reflowable: inline content, mixed text, or a whitespace-sensitive tag. Emit the
+	// Not reflowable, inline content, mixed text, or a whitespace-sensitive tag. Emit the
 	// inner html verbatim on one line so no rendered whitespace can shift.
 	if (!isReflowable(el, classStyle)) return `${pad}${open}${el.innerHTML}</${tag}>`;
 
-	// Reflowable: all-block children with no significant text, so each child can take its
+	// Reflowable, all-block children with no significant text, so each child can take its
 	// own indented line, since collapsed whitespace between block boxes renders nothing.
 	const childLines = Array.from(el.children).map((child) => formatElement(child, depth + 1, classStyle));
 	return `${pad}${open}\n${childLines.join('\n')}\n${pad}</${tag}>`;
@@ -391,10 +389,10 @@ function isReflowable(el: Element, classStyle: Map<string, ClassStyle>): boolean
 	let hasElementChild = false;
 	for (const node of Array.from(el.childNodes)) {
 		if (node.nodeType === Node.TEXT_NODE) {
-			if ((node.textContent ?? '').trim() !== '') return false; // significant text: keep inline
+			if ((node.textContent ?? '').trim() !== '') return false; // Significant text, keep inline
 		} else if (node.nodeType === Node.ELEMENT_NODE) {
 			const child = node as Element;
-			// Injected style/svg nodes are not part of the rendered inline flow: a <style>
+			// Injected style and svg nodes are not part of the rendered inline flow. A <style>
 			// renders nothing, and the icons sprite is absolutely positioned and zero-size, so
 			// reflowing around them is safe.
 			if (isInjected(child)) continue;
@@ -406,7 +404,7 @@ function isReflowable(el: Element, classStyle: Map<string, ClassStyle>): boolean
 }
 
 /**
- * The value of one resting style property: its inline-style value if present, as in the html
+ * The value of one resting style property, its inline-style value if present, as in the html
  * format, else the value from the first of its classes the stylesheet declares one for,
  * as in the bem-css format, else '' when unknown. Routing both display and white-space through
  * one reader lets the same reflow logic serve the inline-styled and class-based formats.
@@ -440,7 +438,7 @@ function preservesWhitespace(el: Element, classStyle: Map<string, ClassStyle>): 
 
 /**
  * Whether an element is inline-level. Uses the static allowlist, then a one-way
- * refinement that never upgrades: an effective display of inline* downgrades an
+ * refinement that never upgrades. An effective display of inline* downgrades an
  * otherwise-block tag, closing the only realistic regression, an author display:inline
  * on a div. The display comes from the inline style for html or the element's class
  * rules for bem-css. Without either, only the allowlist applies.

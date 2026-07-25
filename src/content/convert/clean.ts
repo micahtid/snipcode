@@ -1,28 +1,26 @@
 /**
- * convert/clean.ts: dead-code elimination
+ * Dead-code elimination.
  *
- * Pipeline position: convert
- * Reads from Captured: clone, to test selector and usage
- * Writes to Captured: nothing. It operates on the emitted css string.
+ * This runs in the convert phase. It reads the clone to test selector and usage and writes
+ * nothing back, operating on the emitted css string. Cleanup is dead-code elimination, not
+ * aesthetic surgery.
  *
- * Cleanup is dead-code elimination, not aesthetic surgery.
- *
- * Why this exists: the emitted stylesheet can carry rules and at-rules that
+ * The emitted stylesheet can carry rules and at-rules that
  * nothing in the snip references. This removes EXACTLY four kinds of dead code and
- * nothing else:
+ * nothing else.
  * 1. Style rules whose selector matches no element in the snip
  * 2. Css custom properties that nothing references
  * 3. @font-face whose family is never used
  * 4. @keyframes whose name is never referenced by an animation
  *
- * This is the antithesis of v1's 2,477-line cleaner.ts: no hand-curated property
- * sets, no is<X> predicates, no "shading-critical" / "vertical text spacing"
+ * This is the antithesis of v1's 2,477-line cleaner.ts, no hand-curated property
+ * sets, no is<X> predicates, no "shading-critical" and "vertical text spacing"
  * heuristics. Usage is measured against ground truth, the
  * actual clone subtree and the actual declarations, so the cleaner can never
  * remove something the output depends on. It is reused by every format emitter,
- * html inline and bem/tailwind/scss class rules alike, so it must be format-agnostic.
+ * html inline and bem, tailwind, and scss class rules alike, so it must be format-agnostic.
  *
- * Selector usage is measured against whatever markup the caller passes: the bem
+ * Selector usage is measured against whatever markup the caller passes. The bem
  * emitters generate their class names on a private copy and leave captured.clone
  * inline-styled, so a generated `.block__el` selector matched against the clone would
  * find nothing and wrongly drop a live rule, so those callers pass the emitted markup.
@@ -39,10 +37,9 @@ const DROP = '';
  * Removes dead code from an emitted stylesheet.
  *
  * @param css - the stylesheet text to prune
- * @param captured - the snip, whose baked styles are read for font/animation/var usage
+ * @param captured - the snip, whose baked styles are read for font, animation, and var usage
  * @param markup - the emitted markup selectors are matched against, falling back to the
- *   inline-styled clone when absent. The html path passes none and matches the clone,
- *   its established behavior, since it ships only inline styles plus at-rules
+ *   inline-styled clone when absent
  * @returns the cleaned stylesheet text
  */
 export function cleanCss(css: string, captured: Captured, markup?: string): string {
@@ -51,7 +48,7 @@ export function cleanCss(css: string, captured: Captured, markup?: string): stri
 	try {
 		sheet.replaceSync(css);
 	} catch {
-		// Unparseable css, which is rare: return as-is rather than risk dropping content.
+		// Unparseable css, which is rare, return as-is rather than risk dropping content.
 		return css;
 	}
 
@@ -81,7 +78,7 @@ function parseMatchRoot(markup: string | undefined): Element | null {
 	}
 }
 
-/** What the snip actually references, gathered from the clone + the css itself. */
+/** What the snip actually references, gathered from the clone and the css itself. */
 interface Usage {
 	families: Set<string>; // Lowercased font-family names in use
 	animations: Set<string>; // Animation-name tokens in use
@@ -90,7 +87,7 @@ interface Usage {
 
 /**
  * Decides whether a single top-level rule survives. Returns its serialized text
- * to keep, or '' to drop. Recurses into grouping rules (@media/@supports) and
+ * to keep, or '' to drop. Recurses into grouping rules (@media and @supports) and
  * drops them if they end up empty.
  */
 function keepRule(rule: CSSRule, matchRoot: Element, usage: Usage): string {
@@ -118,7 +115,7 @@ function keepRule(rule: CSSRule, matchRoot: Element, usage: Usage): string {
 		const cond = rule instanceof CSSMediaRule ? `@media ${rule.conditionText}` : `@supports ${rule.conditionText}`;
 		return `${cond} {\n${inner.join('\n')}\n}`;
 	}
-	// Unknown rule type, for example @layer or @property: keep verbatim, do not guess.
+	// Unknown rule type, for example @layer or @property, keep verbatim, do not guess.
 	return rule.cssText;
 }
 
@@ -130,7 +127,7 @@ function selectorMatchesSubtree(selector: string, root: Element): boolean {
 		try {
 			if (root.matches(s) || root.querySelector(s)) return true;
 		} catch {
-			// Unsupported selector, for example the ::selection pseudo: keep it, do not drop
+			// Unsupported selector, for example the ::selection pseudo, keep it, do not drop
 			// something we cannot evaluate.
 			return true;
 		}
@@ -138,7 +135,7 @@ function selectorMatchesSubtree(selector: string, root: Element): boolean {
 	return false;
 }
 
-/** A :root / html rule that only defines custom properties. */
+/** A :root or html rule that only defines custom properties. */
 function isRootVarRule(rule: CSSStyleRule): boolean {
 	if (!/(^|,)\s*(:root|html)\s*(,|$)/.test(rule.selectorText)) return false;
 	for (let i = 0; i < rule.style.length; i++) {

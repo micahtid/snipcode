@@ -1,54 +1,43 @@
 /**
- * components/ResultPanel.tsx: snip output viewer, the code block
+ * Snip output viewer, the code block.
  *
- * Pipeline position: consumes convert/polish output, the emitted code
- * Reads from Captured: n/a. Renders the serialized SnipResult, not Captured.
- * Writes to Captured: n/a
+ * It consumes the convert and polish output, the emitted code, and renders the serialized
+ * SnipResult rather than Captured. After a snip completes the content script ships the
+ * generated code to the side panel, where App listens (see App.tsx). This renders it as v1's
+ * code block. A gradient header holds a copy action, a download action that saves the files
+ * to disk, and, for the self-contained html-shaped formats, a preview action that opens the
+ * rendered output in a new tab. Below the header sits a monospace, scrollable code surface.
+ * Snip mode auto-persists the snippet in the content script via storeSnippet, so the bookmark
+ * here is not a second write. It toggles the `saved` flag on that stored record, which lifts
+ * the snippet into the history view's Saved section and exempts it from the 50-cap eviction.
+ * Assistive mode shows the emitted json, and a builder-gated page shows the static unsupported
+ * message.
  *
- * Principles applied: none. Ui only.
+ * A multi-select snip arrives as one result carrying a `components` array. The tabs are two
+ * tiers, a row of `component-1`, `component-2` tabs on top, and that component's files below
+ * as a second row of file-name tabs, both styled alike. Copy, preview, and the save bookmark
+ * all act on whichever component is active. Download-all becomes a single zip with a folder
+ * per component, since firing one prompt per file across n components is unusable.
  *
- * Why this exists: after a snip completes the content script ships the generated
- * code to the side panel, where App listens (see App.tsx). This renders it as v1's
- * code block. A gradient header holds a copy action, a download action that saves
- * the files to disk, and, for the self-contained html-shaped formats, a preview
- * action that opens the rendered output in a new tab. Below the header sits a
- * monospace, scrollable code surface. Snip mode auto-persists the snippet in the
- * content script via storeSnippet, so the bookmark here is a "saved"
- * indicator, not a second write. Assistive mode shows the emitted json, and a
- * builder-gated page shows the static unsupported message.
- *
- * Note: live format switching, re-emitting all 7 formats without a re-snip, is a
- * deliberate follow-up that is not wired here. `Captured` holds live dom and cannot be
- * shipped back to re-emit, and polish only applies to html/bem. The panel
- * renders whichever format the pipeline produced from the settings default output.
+ * Live format switching, re-emitting all 7 formats without a re-snip, is a
+ * deliberate follow-up not wired here. `Captured` holds live dom and cannot be
+ * shipped back to re-emit, and polish only applies to html and bem. The panel renders
+ * whichever format the pipeline produced from the settings default output.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Bookmark, Check, Copy, Download, Eye, MousePointer2 } from 'lucide-react';
-import type { AssetFile, OutputFormat, TokenUsage } from '../content/types';
+import type { AssetFile, SnipPayload } from '../content/types';
 import { EmptyState } from './EmptyState';
-import { triggerDownload } from '../utils/download';
+import { dataUrlToBase64, downloadBlob, downloadZip, triggerDownload, type ZipEntry } from '../utils/download';
+import { listSnippets, setSnippetSaved } from '../utils/storage';
 import { COLORS, FLASH_MS, FONT_CODE, RADIUS, SURFACE } from '../theme';
 
-/** The snip output the content script ships to the panel as the shipResult payload. */
-export interface SnipResult {
-	mode: 'snip' | 'assistive';
-	format?: OutputFormat;
-	html?: string;
-	css?: string;
-	/** Self-contained html document for snip mode, kept for preview and storage. */
-	output?: string;
-	/** Output split into referenced files: index.html plus svgs and images. Html-shaped snips only. */
-	files?: AssetFile[];
-	/** Emitted assistive json for assistive mode. */
-	json?: string;
-	/** Provider-reported token usage for the polish call, when one ran. */
-	usage?: TokenUsage;
-	warnings?: string[];
-	/** Set when the page is a blocked site builder such as framer or wix. */
-	unsupported?: boolean;
-	builder?: string;
-	message?: string;
-}
+/**
+ * The snip output the content script ships to the panel as the shipResult payload. The
+ * shape is declared once, next to the message constants that carry it, so sender and
+ * renderer cannot drift, and this alias is the name the panel side reads it under.
+ */
+export type SnipResult = SnipPayload;
 
 interface ResultPanelProps {
 	result: SnipResult | null;
@@ -56,9 +45,40 @@ interface ResultPanelProps {
 
 export function ResultPanel({ result }: ResultPanelProps) {
 	const [copied, setCopied] = useState(false);
-	const [active, setActive] = useState(0);
-	// A new snip resets the viewer to its first file, the index document.
-	useEffect(() => setActive(0), [result]);
+	// Which component is being viewed, and which of its files. Two pieces of state rather than
+	// one flat index, because the tabs are two tiers, components on top, that component's files
+	// below. Switching component always lands on its first file, the index document.
+	const [activeComponent, setActiveComponent] = useState(0);
+	const [activeFileIndex, setActiveFileIndex] = useState(0);
+	// Which snippet ids are currently saved, read from storage so the bookmark matches the history
+	// view rather than only reflecting clicks made here.
+	const [savedIds, setSavedIds] = useState<ReadonlySet<string>>(new Set());
+	// A new snip resets to component 1's first file. savedIds syncs from storage and stays live
+	// via storage.onChanged, so saving or unsaving from the history view shows here too.
+	useEffect(() => {
+		setActiveComponent(0);
+		setActiveFileIndex(0);
+		let live = true;
+		const sync = async (): Promise<void> => {
+			const ids = new Set((await listSnippets()).filter((r) => r.saved).map((r) => r.id));
+			if (live) setSavedIds(ids);
+		};
+		void sync();
+		const onChanged = (changes: Record<string, chrome.storage.StorageChange>, area: string): void => {
+			if (area === 'local' && changes['snippets']) void sync();
+		};
+		chrome.storage.onChanged.addListener(onChanged);
+		return () => {
+			live = false;
+			chrome.storage.onChanged.removeListener(onChanged);
+		};
+	}, [result]);
+
+	// The result grouped by component, each carrying its own files. A single snip is one
+	// component, a batch is one per selected element, numbered as the overlay numbered them.
+	// Memoized on result so the copy-flash and save-toggle renders, which do not touch result,
+	// skip the regroup. Computed before the early returns so the hook count never changes.
+	const components = useMemo(() => (result ? buildViews(result) : []), [result]);
 
 	// Before the first snip the capture view shows a quiet pointer placeholder above
 	// its pinned Pick Element action.
@@ -73,26 +93,35 @@ export function ResultPanel({ result }: ResultPanelProps) {
 		);
 	}
 
-	const code = result.mode === 'assistive' ? (result.json ?? '') : (result.output ?? result.html ?? '');
+	const component = components[Math.min(activeComponent, components.length - 1)];
+	const warnings = collectWarnings(result, component);
 
-	// The output as switchable files. For html-shaped snips this is the pipeline's split,
-	// index.html plus the lifted svg/image files. Otherwise it is one synthetic file for
-	// json and other formats.
-	const files: AssetFile[] = result.files?.length
-		? result.files
-		: [{ name: result.mode === 'assistive' ? 'output.json' : 'output.html', language: result.mode === 'assistive' ? 'json' : 'html', text: code }];
-	const activeFile = files[Math.min(active, files.length - 1)]!; // files is never empty, per the fallback above
+	// A batch whose every element failed has nothing to render. Show the same quiet empty
+	// state a pre-snip panel shows, with the per-element reasons beneath it.
+	if (!component) {
+		return (
+			<>
+				<EmptyState Icon={MousePointer2} />
+				{warnings.length > 0 && <div style={warn}>{warningLabel(warnings.length)}</div>}
+			</>
+		);
+	}
+
+	const activeFile = component.files[Math.min(activeFileIndex, component.files.length - 1)]!;
+	// The result the active tab belongs to, the whole result for a single snip, or the one
+	// component for a batch. Preview and save both act on this, not on the batch envelope.
+	const source = component.source;
 	const copyText = activeFile.text ?? activeFile.dataUrl ?? '';
 
-	// Preview makes sense for the html-shaped formats, whose output is a self-contained
-	// document (markup plus an inline stylesheet) that renders on its own. Those are the
-	// html format with semantic bem classes plus css, and the bem-scss/legacy bem-css
-	// variants. Tailwind/jsx/vue need a build step or a framework, so they would not render standalone.
-	const PREVIEWABLE: ReadonlySet<string> = new Set(['html', 'bem-css', 'bem-scss']);
 	// Preview renders the inlined self-contained document, so it works even though the
 	// displayed index.html references the lifted files by name.
-	const previewSource = result.output ?? result.html ?? '';
-	const canPreview = result.mode === 'snip' && PREVIEWABLE.has(result.format ?? '') && previewSource.length > 0;
+	const previewSource = source.output ?? source.html ?? '';
+	const canPreview = source.mode === 'snip' && PREVIEWABLE.has(source.format ?? '') && previewSource.length > 0;
+
+	// The stored record the bookmark toggles, the active component's for a batch, since each
+	// component was persisted as its own snippet. Absent when the snip could not be persisted.
+	const snippetId = source.snippetId;
+	const isSaved = snippetId !== undefined && savedIds.has(snippetId);
 
 	const onCopy = async (): Promise<void> => {
 		try {
@@ -105,7 +134,7 @@ export function ResultPanel({ result }: ResultPanelProps) {
 	};
 
 	const onPreview = (): void => {
-		// Open the generated html in a new tab. A blob url is used because data: urls
+		// Open the generated html in a new tab. A blob url is used because data urls
 		// are blocked for top-level navigation. The url is revoked once the new tab
 		// has had time to load it.
 		const url = URL.createObjectURL(new Blob([previewSource], { type: 'text/html' }));
@@ -113,7 +142,20 @@ export function ResultPanel({ result }: ResultPanelProps) {
 		setTimeout(() => URL.revokeObjectURL(url), 30000);
 	};
 
-	// Save a single file to disk. Binary files (images, fonts) carry a data: url that
+	// Flip the saved flag on the stored record this snip was persisted under. The write is
+	// best-effort, matching how the snip itself was persisted, so a storage failure only
+	// warns and leaves the bookmark showing its real, unchanged state.
+	const onToggleSaved = async (id: string): Promise<void> => {
+		try {
+			await setSnippetSaved(id, !savedIds.has(id));
+			// The storage.onChanged listener refreshes savedIds, so the bookmark reflects the
+			// stored state, including an eviction unsaving at the cap can trigger.
+		} catch (err) {
+			console.warn('snipcode: could not update saved state', err);
+		}
+	};
+
+	// Save a single file to disk. Binary files (images, fonts) carry a data url that
 	// downloads directly. Text files such as html, svg, and json become a blob whose object
 	// url is revoked once the browser has read it.
 	const downloadFile = (file: AssetFile): void => {
@@ -121,53 +163,93 @@ export function ResultPanel({ result }: ResultPanelProps) {
 			triggerDownload(file.dataUrl, file.name);
 			return;
 		}
-		const url = URL.createObjectURL(new Blob([file.text ?? ''], { type: mimeFor(file.language) }));
-		triggerDownload(url, file.name);
-		setTimeout(() => URL.revokeObjectURL(url), 30000);
+		downloadBlob(new Blob([file.text ?? ''], { type: mimeFor(file.language) }), file.name);
 	};
 
-	// Download every file of a split snip, so index.html lands next to the svg/image
-	// files it references and renders standalone, or the single file otherwise.
+	// Download every file of a split snip, so index.html lands next to the svg or image files it
+	// references and renders standalone, or the single file otherwise. A batch instead saves
+	// one zip with a folder per component, since n components times m files would otherwise
+	// fire a download prompt each. File names inside a folder are the original ones, so each
+	// component's index.html still finds the assets it references.
 	const onDownload = (): void => {
-		if (files.length > 1) files.forEach(downloadFile);
-		else downloadFile(activeFile);
+		if (components.length > 1) {
+			const entries = components.flatMap((view) => view.files.map((file) => zipEntry(view, file)));
+			void downloadZip('snipcode-components.zip', entries).catch((err) => {
+				console.warn('snipcode: could not build the component zip', err);
+			});
+			return;
+		}
+		component.files.forEach(downloadFile);
 	};
 
 	return (
 		<div style={container}>
 			<div style={header}>
+				{/* Copy and save are the one-tap actions and sit together on the left; view and
+				    download are heavier and less frequent, so they sit on the right. */}
 				<div style={actions}>
 					<button className="sc-icon-btn" title={copied ? 'Copied' : `Copy ${activeFile.name}`} onClick={() => void onCopy()}>
 						{copied ? <Check size={16} /> : <Copy size={16} />}
 					</button>
-					<button
-						className="sc-icon-btn"
-						title={files.length > 1 ? 'Download all files' : `Download ${activeFile.name}`}
-						onClick={onDownload}
-					>
-						<Download size={16} />
-					</button>
+					{source.mode === 'snip' && snippetId !== undefined && (
+						<button
+							className={`sc-icon-btn${isSaved ? ' sc-icon-btn-saved' : ''}`}
+							title={isSaved ? 'Saved. Click to Unsave' : 'Save snippet'}
+							aria-pressed={isSaved}
+							aria-label={isSaved ? 'Unsave snippet' : 'Save snippet'}
+							onClick={() => void onToggleSaved(snippetId)}
+						>
+							<Bookmark size={15} fill={isSaved ? 'currentColor' : 'none'} />
+						</button>
+					)}
 					{canPreview && (
 						<button className="sc-icon-btn" title="Preview in new tab" onClick={onPreview}>
 							<Eye size={16} />
 						</button>
 					)}
-					{result.mode === 'snip' && (
-						<span className="sc-icon-btn sc-icon-btn-saved" title="Saved to your snippets" aria-label="Saved">
-							<Bookmark size={15} fill="currentColor" />
-						</span>
-					)}
+					<button
+						className="sc-icon-btn"
+						style={downloadAction}
+						title={
+							components.length > 1
+								? 'Download all components as a zip'
+								: component.files.length > 1
+									? 'Download all files'
+									: `Download ${activeFile.name}`
+						}
+						onClick={onDownload}
+					>
+						<Download size={16} />
+					</button>
 				</div>
 			</div>
-			{files.length > 1 && (
-				<div className="sc-scroll" style={tabBar} role="tablist">
-					{files.map((file, i) => (
+			{components.length > 1 && (
+				<div className="sc-scroll" style={componentBar} role="tablist" aria-label="Components">
+					{components.map((view, i) => (
+						<button
+							key={view.index}
+							role="tab"
+							aria-selected={view === component}
+							className={`sc-tab${view === component ? ' sc-tab-active' : ''}`}
+							onClick={() => {
+								setActiveComponent(i);
+								setActiveFileIndex(0);
+							}}
+						>
+							component-{view.index}
+						</button>
+					))}
+				</div>
+			)}
+			{component.files.length > 1 && (
+				<div className="sc-scroll" style={fileBar} role="tablist" aria-label="Files">
+					{component.files.map((file, i) => (
 						<button
 							key={file.name}
 							role="tab"
 							aria-selected={file === activeFile}
 							className={`sc-tab${file === activeFile ? ' sc-tab-active' : ''}`}
-							onClick={() => setActive(i)}
+							onClick={() => setActiveFileIndex(i)}
 						>
 							{file.name}
 						</button>
@@ -185,17 +267,105 @@ export function ResultPanel({ result }: ResultPanelProps) {
 					<code>{activeFile.text}</code>
 				</pre>
 			)}
-			{result.warnings && result.warnings.length > 0 && (
-				<div style={warn}>{result.warnings.length} Warning{result.warnings.length > 1 ? 's' : ''}</div>
-			)}
+			{warnings.length > 0 && <div style={warn}>{warningLabel(warnings.length)}</div>}
 		</div>
 	);
 }
 
+/** One component of a snip: its number, the result it came from, and its own files. */
+interface ComponentView {
+	/** 1 based, matching the number the overlay drew on that element while it was pinned. */
+	index: number;
+	/** The result this component's files belong to: the whole result, or one of a batch. */
+	source: SnipResult;
+	files: AssetFile[];
+}
+
+/**
+ * Group a result by component. A batch becomes one entry per selected element, numbered as
+ * the overlay numbered it, and a single snip is exactly one entry. A component that produced
+ * no files, an element the pipeline could not emit, is dropped, so the numbering follows the
+ * components that actually rendered. File names are never rewritten, because each component's
+ * index.html references its stylesheet and assets by name, the `component-2/` prefix lives
+ * only in the zip layout, which keeps those relative references intact.
+ *
+ * @param result - the shipped snip result
+ * @returns one view per component, in pin order
+ */
+function buildViews(result: SnipResult): ComponentView[] {
+	if (result.components) {
+		return result.components
+			.map((component, i) => ({ index: i + 1, source: component, files: filesOf(component) }))
+			.filter((view) => view.files.length > 0);
+	}
+	const files = filesOf(result);
+	return files.length > 0 ? [{ index: 1, source: result, files }] : [];
+}
+
+// Preview makes sense for the html-shaped formats, whose output is a self-contained
+// document (markup plus an inline stylesheet) that renders on its own. Those are the
+// html format with semantic bem classes plus css, and the bem-scss and legacy bem-css
+// variants. Tailwind, jsx, or vue need a build step or a framework, so they would not render standalone.
+const PREVIEWABLE: ReadonlySet<string> = new Set(['html', 'bem-css', 'bem-scss']);
+
+/**
+ * The single file a format that skips the asset split delivers, keyed by output format. Only
+ * the html-shaped formats go through splitAssets and get a file set of their own, and everything
+ * else is one file, and this is what it is called. Adding a format is one line here.
+ */
+const FALLBACK_FILE: Record<string, { name: string; language: AssetFile['language'] }> = {
+	tailwind: { name: 'index.html', language: 'html' },
+	'jsx-tailwind': { name: 'Component.jsx', language: 'jsx' },
+	'jsx-css': { name: 'Component.jsx', language: 'jsx' },
+	vue: { name: 'Component.vue', language: 'vue' },
+};
+
+/**
+ * One result's files. For html-shaped snips this is the pipeline's split, index.html plus
+ * styles.css plus the lifted svg or image files. Otherwise it is one file named for the format,
+ * so a jsx snip downloads as Component.jsx rather than as a synthetic output.html.
+ */
+function filesOf(result: SnipResult): AssetFile[] {
+	if (result.files?.length) return result.files;
+	const code = result.mode === 'assistive' ? (result.json ?? '') : (result.output ?? result.html ?? '');
+	if (!code) return [];
+	if (result.mode === 'assistive') return [{ name: 'output.json', language: 'json', text: code }];
+	const fallback = FALLBACK_FILE[result.format ?? ''] ?? { name: 'index.html', language: 'html' as const };
+	return [{ name: fallback.name, language: fallback.language, text: code }];
+}
+
+/**
+ * The warnings the panel counts, a single snip's own, or, for a batch, the batch-level ones
+ * such as a skipped element plus those of the component being viewed.
+ */
+function collectWarnings(result: SnipResult, view: ComponentView | undefined): string[] {
+	const own = result.warnings ?? [];
+	if (!result.components || !view) return own;
+	return [...own, ...(view.source.warnings ?? [])];
+}
+
+/** "3 Warnings", singular at one. */
+function warningLabel(count: number): string {
+	return `${count} Warning${count > 1 ? 's' : ''}`;
+}
+
+/** One zip entry for a file, filed under its component folder with its original file name. */
+function zipEntry(view: ComponentView, file: AssetFile): ZipEntry {
+	const path = `component-${view.index}/${file.name}`;
+	if (!file.dataUrl) return { path, text: file.text ?? '' };
+	const base64 = dataUrlToBase64(file.dataUrl);
+	// An unreadable data url decodes to '', which buildZip would silently drop, so warn instead
+	// of losing the asset.
+	if (!base64) console.warn(`snipcode: skipping ${path}, its data url could not be decoded`);
+	return { path, base64 };
+}
+
 /** The download mime type for a text file's language. Image files use their data: url instead. */
 function mimeFor(language: AssetFile['language']): string {
+	if (language === 'css') return 'text/css';
 	if (language === 'svg') return 'image/svg+xml';
 	if (language === 'json') return 'application/json';
+	if (language === 'jsx' || language === 'vue') return 'text/plain';
 	return 'text/html';
 }
 
@@ -210,8 +380,16 @@ const header: React.CSSProperties = {
 	background: SURFACE.headerGradient, borderBottom: `1px solid ${SURFACE.border}`,
 };
 const actions: React.CSSProperties = { display: 'flex', gap: '2px', alignItems: 'center' };
-const tabBar: React.CSSProperties = {
-	display: 'flex', gap: '2px', padding: '0 8px', overflowX: 'auto',
+/** Separates the heavy download action from the light copy and save pair beside it. */
+const downloadAction: React.CSSProperties = { marginLeft: '4px' };
+/** The component tabs, one per selected element, as file-style tabs rather than round pills. */
+const componentBar: React.CSSProperties = {
+	display: 'flex', gap: '2px', alignItems: 'center', padding: '0 8px', overflowX: 'auto',
+	background: COLORS.white, borderBottom: `1px solid ${SURFACE.border}`,
+};
+/** Every file of the active component, styled alike: a stylesheet is not more of a file than an icon. */
+const fileBar: React.CSSProperties = {
+	display: 'flex', gap: '2px', alignItems: 'center', padding: '0 8px', overflowX: 'auto',
 	background: COLORS.white, borderBottom: `1px solid ${SURFACE.border}`,
 };
 const imageWrap: React.CSSProperties = {
@@ -224,10 +402,10 @@ const binaryNote: React.CSSProperties = {
 	padding: '24px', flex: 1, minHeight: 0, background: COLORS.slate50, color: COLORS.slate500, fontSize: '12px',
 };
 const display: React.CSSProperties = {
-	// Code never wraps: long lines scroll horizontally (overflow: auto) so the markup
+	// Code never wraps, long lines scroll horizontally (overflow auto) so the markup
 	// reads as emitted rather than reflowing mid-attribute. tabSize narrows the
 	// tab-indented output from the browser default of 8 columns so more fits per line.
-	// flex: 1 lets the code body fill the remaining height of the result card.
+	// a flex of 1 lets the code body fill the remaining height of the result card.
 	margin: 0, padding: '14px 16px', flex: 1, minHeight: 0, overflow: 'auto', background: COLORS.white,
 	fontFamily: FONT_CODE, fontSize: '12px', lineHeight: 1.7, color: COLORS.slate800, whiteSpace: 'pre', tabSize: 2,
 };

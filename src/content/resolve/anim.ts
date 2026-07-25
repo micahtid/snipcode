@@ -1,19 +1,14 @@
 /**
- * resolve/anim.ts: @keyframes resolution
+ * @keyframes resolution.
  *
- * Pipeline position: resolve
- * Reads from Captured: bakedStyles, keyframes
- * Writes to Captured: keyframes, narrowed to referenced animations
- *
- * Travel-with-the-snip rule: a @keyframes block travels only if an animation in
- * the snip references it.
- *
- * Why this exists: animation/transition values are already baked onto elements,
- * but the @keyframes blocks they name live in stylesheets that do not travel.
- * This pairs the animation references in the baked styles with the captured
- * @keyframes and keeps only the ones actually used, so the emitted css carries
- * the animations the snip needs and nothing else. clean.ts re-checks this as
- * dead-code elimination. Here it is the resolve-phase pairing.
+ * This runs in the resolve phase. It reads bakedStyles and keyframes and writes keyframes,
+ * narrowed to referenced animations. The travel-with-the-snip rule is that a @keyframes block
+ * travels only if an animation in the snip references it. Animation and transition values are
+ * already baked onto elements, but the @keyframes blocks they name live in stylesheets that do
+ * not travel. This pairs the animation references in the baked styles with the captured
+ * @keyframes and keeps only the ones actually used, so the emitted css carries the animations
+ * the snip needs and nothing else. clean.ts re-checks this as dead-code elimination. Here it is
+ * the resolve-phase pairing.
  */
 import type { Captured } from '../types';
 
@@ -29,7 +24,7 @@ export function resolveAnimations(captured: Captured): void {
 }
 
 /**
- * Collects every token that appears in an animation / animation-name value across
+ * Collects every token that appears in an animation or animation-name value across
  * the baked styles. The animation shorthand lists name, duration, timing, and so
  * on, in any order, so rather than parse the grammar we gather all tokens and let
  * the keyframe-name intersection in the caller pick the real names. A duration like

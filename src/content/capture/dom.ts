@@ -1,24 +1,19 @@
 /**
- * capture/dom.ts: dom clone + element metadata extraction
+ * Dom clone and element metadata extraction.
  *
- * Pipeline position: capture
- * Reads from Captured: root, the live element
- * Writes to Captured: clone, element, the metadata block
- *
- * Why this exists: the pipeline mutates a detached copy of the picked subtree so
- * the live page is never touched. This module produces that copy and the element
- * metadata block of selectors, xpath, bounding box, and ancestors that both snip and
- * assistive modes consume. It also promotes lazy-loaded image
- * sources at clone time so images render when the snip is pasted elsewhere,
- * ported from v1 extraction-pipeline cloneElement. Shadow piercing is added
- * later via cdp. This is the cssom/light-dom baseline.
+ * This runs in the capture phase. It reads root, the live element, and writes clone and
+ * element, the metadata block. The pipeline mutates a detached copy of the picked subtree so
+ * the live page is never touched. This module produces that copy and the element metadata
+ * block of selectors, xpath, bounding box, and ancestors that both snip and assistive modes
+ * consume. It also promotes lazy-loaded image sources at clone time so images render when the
+ * snip is pasted elsewhere, ported from v1 extraction-pipeline cloneElement. Shadow piercing
+ * is added later via cdp. This is the cssom and light-dom baseline.
  */
 import type { Captured } from '../types';
 
 /**
- * Common lazy-loading attribute names, in priority order. These are html
- * attribute names for a universal lazy-img convention, normalized at capture so
- * output is portable.
+ * Common lazy-loading attribute names, in priority order, from a universal lazy-img
+ * convention, normalized at capture so output is portable.
  */
 const LAZY_SRC_ATTRS = ['data-src', 'data-lazy-src', 'data-original', 'data-srcset'] as const;
 
@@ -49,7 +44,7 @@ export function cloneElement(root: Element): Element {
 	return clone;
 }
 
-/** True for the empty/spacer srcs lazy-loaders use before swapping in the real one. */
+/** True for the empty or spacer srcs lazy-loaders use before swapping in the real one. */
 function isPlaceholderSrc(src: string): boolean {
 	return !src || src.startsWith('data:image') || src.includes('1x1') || src.includes('placeholder');
 }
@@ -57,8 +52,8 @@ function isPlaceholderSrc(src: string): boolean {
 /**
  * Builds the element metadata block.
  *
- * Both modes need this. The snip mode uses the tag/box, and the assistive mode
- * emits the whole block as json. It emits two selectors: `selector`, the shortest
+ * Both modes need this. The snip mode uses the tag and box, and the assistive mode
+ * emits the whole block as json. It emits two selectors, `selector`, the shortest
  * unique one, and `robustSelector`, which prefers stable data-attributes or ids
  * over class hashes, so a downstream agent can re-find the element even if class
  * hashes churn.
@@ -96,7 +91,7 @@ export function serializeRaw(clone: Element): string {
 /**
  * Shortest css selector that uniquely identifies `el` in its document.
  *
- * Tries cheapest-first: a unique id, then a unique single-class, then walks up
+ * Tries cheapest-first, a unique id, then a unique single-class, then walks up
  * building a descendant path with :nth-of-type segments until querySelectorAll
  * returns exactly this element. Uniqueness is verified against the live document
  * rather than assumed, so the emitted selector is always correct.
@@ -132,7 +127,7 @@ function shortestSelector(el: Element): string {
 function robustSelector(el: Element): string {
 	const tag = el.tagName.toLowerCase();
 	for (const attr of el.getAttributeNames()) {
-		// Stable hooks are usually data-testid / data-section-id / data-id etc.
+		// Stable hooks are usually data-testid, data-section-id, data-id, and the like.
 		if (attr.startsWith('data-') && /id|test|section|name|component/.test(attr)) {
 			const val = el.getAttribute(attr);
 			if (val) {
@@ -141,7 +136,7 @@ function robustSelector(el: Element): string {
 			}
 		}
 	}
-	// An id without a long hex/hash tail reads as author-stable, not generated.
+	// An id without a long hex or hash tail reads as author-stable, not generated.
 	if (el.id && !/[0-9a-f]{6,}/i.test(el.id) && isUnique(`#${cssEscape(el.id)}`, el)) {
 		return `#${cssEscape(el.id)}`;
 	}
@@ -160,7 +155,7 @@ function xpathOf(el: Element): string {
 	return `/${parts.join('/')}`;
 }
 
-/** The ancestor chain up to <body>, each with its own shortest selector + role. */
+/** The ancestor chain up to <body>, each with its own shortest selector and role. */
 function ancestorsOf(el: Element): Array<{ tagName: string; selector: string; role?: string }> {
 	const out: Array<{ tagName: string; selector: string; role?: string }> = [];
 	let node = el.parentElement;
@@ -196,7 +191,7 @@ function isUnique(selector: string, el: Element): boolean {
 	}
 }
 
-/** Escape a class/id token for use in a css selector. */
+/** Escape a class or id token for use in a css selector. */
 function cssEscape(value: string): string {
 	// CSS.escape is standard in mv3 browsers, but guard anyway for headless contexts.
 	return typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(value) : value.replace(/([^\w-])/g, '\\$1');

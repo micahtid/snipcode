@@ -1,18 +1,15 @@
 /**
- * capture/states-measure.ts: measure interactive states by forcing them live
+ * Measure interactive states by forcing them live.
  *
- * Pipeline position: capture
- * Reads from Captured: root, foundationRules, componentRules
- * Writes to Captured: measuredStates, warnings
- *
- * Why this exists: the rest of the pipeline establishes fidelity by measuring ground
- * truth: bake.ts renders the live element and trusts an authored value only when it
- * round-trips. Interactive states were the one corner that guessed instead: the reconcile
- * handler copied authored `:hover`/`:focus`/`:active` rules and replayed them, which fails
- * two ways on real components. It silently drops descendant effects a framework encodes
- * out of reach: Tailwind's `group-hover:` compiles to `:is(:where(.group):hover *)`, whose
- * `:hover` is buried inside `:is()`. And it replays a parent rule that rides on an
- * inheritance the resting bake already flattened: a hovered pill turns its text white via
+ * This runs in the capture phase. It reads root, foundationRules, and componentRules, and
+ * writes measuredStates and warnings. The rest of the pipeline establishes fidelity by
+ * measuring ground truth. bake.ts renders the live element and trusts an authored value only
+ * when it round-trips. Interactive states were the one corner that guessed instead. The
+ * reconcile handler copied authored `:hover`/`:focus`/`:active` rules and replayed them, which
+ * fails two ways on real components. It silently drops descendant effects a framework encodes
+ * out of reach. Tailwind's `group-hover:` compiles to `:is(:where(.group):hover *)`, whose
+ * `:hover` is buried inside `:is()`. And it replays a parent rule that rides on an inheritance
+ * the resting bake already flattened, since a hovered pill turns its text white via
  * inheritance, but the bake froze an explicit per-element color that outranks it.
  *
  * This module restores the measure-don't-copy principle to states. It forces each state in
@@ -23,23 +20,23 @@
  * inheritance-resolved literals, so the reconcile emit (features/states.ts) is a pure transform
  * with no var() survival or per-property cascade merge left to do.
  *
- * Each scoped element is read on two layers: its own box, and any ::before/::after that
- * generates a box at rest. This covers the common hover idiom of a glow/underline/reveal that
- * lives entirely on a generated box, whose own element style never changes. A pseudo layer is
- * diffed against its own resting baseline and emitted as its own affected entry, so reconcile
- * can re-anchor it as `[marker]:hover::after { ... }` over the resting pseudo the pseudo pass
- * already ships.
+ * Each scoped element is read on two layers, its own box, and any ::before or ::after that
+ * generates a box at rest. This covers the common hover idiom of a glow, underline, or reveal
+ * that lives entirely on a generated box, whose own element style never changes. A pseudo
+ * layer is diffed against its own resting baseline and emitted as its own affected entry, so
+ * reconcile can re-anchor it as `[marker]:hover::after { ... }` over the resting pseudo the
+ * pseudo pass already ships.
  *
- * The forcing is privileged and lives here, beside capture/cdp.ts's other CDP paths, for the
- * same reason: only the background can attach the debugger, since chrome.debugger is
- * background-only, and only the live capture phase has the element, its ancestor chain, and
- * getComputedStyle. It soft-fails exactly like the inherited-chain capture: if the debugger
+ * The forcing is privileged and lives here, beside capture/cdp.ts's other CDP paths, because
+ * only the background can attach the debugger (chrome.debugger is background-only), and only
+ * the live capture phase has the element, its ancestor chain, and
+ * getComputedStyle. It soft-fails exactly like the inherited-chain capture, so if the debugger
  * is busy, such as when devtools is open, the snip proceeds and reconcile falls back to copying rules.
  *
- * Determinism: forced values are read under a temporary transitions-off/animations-off shim,
- * so every endpoint is the state's final value read instantaneously, with no mid-transition
- * sampling, no settle-timing flakiness. The page is left exactly as found, with states cleared,
- * shim removed, and tags removed, even on error.
+ * For determinism, forced values are read under a temporary transitions-off and animations-off
+ * shim, so every endpoint is the state's final value read instantaneously, with no
+ * mid-transition sampling, no settle-timing flakiness. The page is left exactly as found, with
+ * states cleared, shim removed, and tags removed, even on error.
  */
 import type { Captured, MeasuredAffected, MeasuredState, MeasuredStateDecl } from '../types';
 import { mediaApplies, subtreeElements } from '../reconcile/match';
@@ -52,9 +49,9 @@ const FORCE_TAG = 'data-snipcode-force';
 const SHIM_TEXT = '*, *::before, *::after { transition: none !important; animation: none !important; }';
 
 /**
- * Work budget: measurement makes a CDP round-trip per trigger-and-state pair and reads computed styles
- * across every scoped element, so both scale with the snip. Beyond these bounds, such as a very
- * large snip like a whole site nav with hundreds of hover rules, measurement degrades to the copy
+ * The work budget is bounded, since measurement makes a CDP round-trip per trigger-and-state pair and reads computed styles
+ * across every scoped element, so both scale with the snip. Beyond these bounds, such as a whole
+ * site nav with hundreds of hover rules, measurement degrades to the copy
  * path, the prior behavior, rather than risk timing out. The bounds are counts, so the
  * measure-or-copy decision is a deterministic function of the page.
  */
@@ -63,7 +60,7 @@ const MAX_MEASURED_SCOPE = 2000;
 
 /**
  * Forces every in-subtree interactive state the page's own rules describe and records the
- * concrete computed delta. Sets captured.measuredStates: an array, possibly empty, when
+ * concrete computed delta. Sets captured.measuredStates to an array, possibly empty, when
  * measurement ran, or null when cdp was unavailable so reconcile copies authored rules.
  *
  * @param captured - the in-flight capture, with measuredStates + warnings mutated in place
@@ -71,7 +68,7 @@ const MAX_MEASURED_SCOPE = 2000;
 export async function measureInteractiveStates(captured: Captured): Promise<void> {
 	const subtree = new Set(subtreeElements(captured.root));
 	const triggers = discoverTriggers(captured, subtree);
-	// No in-subtree state rule: nothing to force, and no copy fallback is needed either.
+	// No in-subtree state rule, so nothing to force, and no copy fallback is needed either.
 	if (triggers.size === 0) {
 		captured.measuredStates = [];
 		return;
@@ -124,7 +121,7 @@ export async function measureInteractiveStates(captured: Captured): Promise<void
 
 		const began = await beginForce();
 		if (!began) {
-			// Cdp refused because devtools or another client is attached: degrade to copying rules.
+			// Cdp refused because devtools or another client is attached, so degrade to copying rules.
 			captured.warnings.push('states: live measurement unavailable (cdp busy); falling back to copying authored rules');
 			captured.measuredStates = null;
 			return;
@@ -226,7 +223,7 @@ function matchInSubtree(root: Element, structural: string, subtree: Set<Element>
 /**
  * Forces each trigger-and-state pair one at a time, reading the trigger scope's computed delta under
  * the force, so descendant/sibling/inherited effects are captured without parsing any
- * relationship. States are isolated: each is cleared before the next is forced.
+ * relationship. States are isolated, so each is cleared before the next is forced.
  *
  * @param triggers - the discovered trigger elements and their pseudo-sets
  * @param tags - each trigger's unique force tag, for the background to resolve
@@ -262,7 +259,7 @@ async function measureAll(
 }
 
 /**
- * The elements a forced trigger can restyle in a way the standalone emit can re-anchor: the
+ * The elements a forced trigger can restyle in a way the standalone emit can re-anchor, the
  * trigger itself, its descendants via a descendant combinator, and its following same-parent
  * siblings via a general-sibling combinator. A change anywhere else cannot be expressed by a
  * single combinator between two markers, so it would be dropped at emit. Not reading it keeps
@@ -381,8 +378,8 @@ function isMeasurableProperty(name: string): boolean {
 
 /**
  * Whether a property is a flow-relative, or logical, alias whose physical equivalent
- * getComputedStyle also enumerates with the same value: `inline-size`/`width`,
- * `padding-inline-start`/`padding-left`, `inset-block-end`/`bottom`, and so on. The physical form is
+ * getComputedStyle also enumerates with the same value, such as `inline-size` and `width`,
+ * `padding-inline-start` and `padding-left`, `inset-block-end` and `bottom`, and so on. The physical form is
  * always co-measured and universally supported, so reading the logical alias too would emit a
  * redundant second declaration of the same change. The writing mode is frozen in the snip, so
  * the physical form is a faithful stand-in.

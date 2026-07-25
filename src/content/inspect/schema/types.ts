@@ -1,18 +1,12 @@
 /**
- * inspect/schema/types.ts: the page-schema contracts
+ * The page-schema contracts.
  *
- * Pipeline position: inspect, page-scoped. This is the shape the schema extractor emits.
- * Reads from DOM: nothing. These are type definitions.
- * Writes to: nothing. These are type definitions.
- *
- * Principles applied: none. These are type definitions.
- *
- * Why this exists: the schema inspector walks the page and produces a
- * compressed design-system schema, the PageSchema below. Defining its shape and
- * every sub-type in one place lets the extractor, the optimizer, and the ai pass
- * agree on the contract. Ported from v1 schema/types.ts, the output types only.
- * v1's re-exports of capture-side types are dropped, and the extractor reads the live
- * dom directly.
+ * This is the shape the schema extractor emits, in the inspect phase, page-scoped. It reads
+ * nothing from the DOM and writes nothing, these are type definitions. The schema inspector walks
+ * the page and produces a compressed design-system schema, the PageSchema below. Defining its
+ * shape and every sub-type in one place lets the extractor, the optimizer, and the ai pass agree
+ * on the contract. This was ported from v1 schema/types.ts, the output types only. v1's
+ * re-exports of capture-side types are dropped, and the extractor reads the live dom directly.
  */
 
 /** One color the page uses, with the css contexts it appears in and a usage count. */
@@ -30,7 +24,7 @@ export interface FontEntry {
 	usage: string;
 }
 
-/** One node in the compressed structure tree: style ref plus optional repeat/text. */
+/** One node in the compressed structure tree, a style ref plus optional repeat and text. */
 export interface SchemaNode {
 	tag: string;
 	role: string;
@@ -40,7 +34,7 @@ export interface SchemaNode {
 	text?: string; // Placeholder like "{h1}", "{p}", "{btn}".
 }
 
-/** A repeated element pattern: 3+ identical role+style elements. */
+/** A repeated element pattern, 3+ identical role and style elements. */
 export interface ComponentPattern {
 	name: string;
 	role: string;
@@ -68,7 +62,7 @@ export type LayoutPattern =
 	| 'horizontal-scroll' | 'single-column' | 'split'
 	| 'unknown';
 
-/** One top-level section's composition: type, layout, and the elements it contains. */
+/** One top-level section's composition, its type, layout, and the elements it contains. */
 export interface SectionBlueprint {
 	type: SectionType;
 	tag: string;
@@ -89,7 +83,7 @@ export interface ContentGrouping {
 	elements: string[];
 }
 
-/** One button variant's full visual spec, including hover/active states. */
+/** One button variant's full visual spec, including hover and active states. */
 export interface ButtonBlueprint {
 	variant: string; // "primary", "secondary", "ghost", etc.
 	bg: string;
@@ -127,7 +121,7 @@ export interface NavBlueprint {
 	linkCount: number;
 }
 
-/** The page's decorative language: blobs, gradients, illustration style, accents. */
+/** The page's decorative language, blobs, gradients, illustration style, accents. */
 export interface DecorativeInfo {
 	hasBlobs: boolean;
 	hasGradientBgs: boolean;

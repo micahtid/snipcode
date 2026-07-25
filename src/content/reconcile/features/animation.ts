@@ -1,34 +1,29 @@
 /**
- * features/animation.ts: animation, transition, transform context
+ * Animation, transition, and transform context.
  *
- * Pipeline position: reconcile
- * Reads from Captured: root, clone, bakedStyles
- * Writes to Captured: bakedStyles + clone, the transform context and anim declarations
+ * This is a reconcile-phase feature handler. It reads root, clone, and bakedStyles
+ * from Captured and writes bakedStyles and clone, the transform context and animation
+ * declarations. It extends the "ship what renders" rule to the transform and animation
+ * context, without disturbing the per-element decision about the `transform` value.
  *
- * Principles applied: this extends the "ship what renders" rule to the transform
- * and animation context, without disturbing the per-element decision about the
- * `transform` value.
+ * The relevant spec is https://developer.mozilla.org/en-US/docs/Web/CSS/transform,
+ * which also covers animation, transition, perspective, transform-style, and
+ * backface-visibility. It detects an element with a non-default value for one of the
+ * transform-context or animation and transition properties, and otherwise early-returns
+ * per element. It bakes those computed values onto the matching clone element. It
+ * deliberately does not re-bake `transform` or the individual translate, rotate, and
+ * scale properties, because those can be mid-animation at capture time and the
+ * per-element pass already owns the value. It mutates bakedStyles and the clone inline
+ * styles only.
  *
- * CSS/spec reference: https://developer.mozilla.org/en-US/docs/Web/CSS/transform
- * also covers animation, transition, perspective, transform-style, backface-visibility.
- * Detection criterion: an element with a non-default value for one of the
- * transform-context or animation/transition properties. Otherwise it early-returns
- * per element.
- * Transform contract: it bakes those computed values onto the matching clone
- * element. It deliberately does not re-bake `transform` or the individual
- * translate/rotate/scale properties, because those can be mid-animation at capture
- * time and the per-element pass already owns the value. It mutates bakedStyles and
- * the clone inline styles only.
- *
- * Why this exists: the static transform context of transform-origin, perspective,
- * and the 3d flags, together with the animation and transition shorthands, is
- * easily omitted from the authored cascade, yet it shapes the rendered frame. The
- * grader freezes animations at frame 0 (reducedMotion), so the @keyframes 0% styles
- * only apply if the element still carries its `animation` declaration and the
- * keyframes travel. resolve/anim keeps the referenced ones, with cubic-bezier
- * precision intact in the verbatim keyframe text. `transform` itself is left to the
- * per-element pass, so an animated element is not locked to a mid-flight frame
- * that would mismatch frame 0.
+ * The static transform context of transform-origin, perspective, and the 3d flags,
+ * together with the animation and transition shorthands, is easily omitted from the
+ * authored cascade, yet it shapes the rendered frame. The grader freezes animations at
+ * frame 0 (reducedMotion), so the @keyframes 0% styles only apply if the element still
+ * carries its `animation` declaration and the keyframes travel. resolve/anim keeps the
+ * referenced ones, with cubic-bezier precision intact in the verbatim keyframe text.
+ * `transform` itself is left to the per-element pass, so an animated element is not
+ * locked to a mid-flight frame that would mismatch frame 0.
  */
 import type { Captured } from '../../types';
 import { pairedSubtrees } from '../match';
@@ -59,7 +54,7 @@ function isDefault(prop: string, value: string): boolean {
 /**
  * Bakes non-default transform-context and animation declarations onto each element.
  *
- * @param captured - bakedStyles + clone are mutated in place
+ * @param captured - bakedStyles and clone are mutated in place
  */
 export function apply(captured: Captured): Captured {
 	for (const [original, clone] of pairedSubtrees(captured.root, captured.clone)) {

@@ -1,20 +1,16 @@
 /**
- * inspect/colors.ts: page-wide color extractor
+ * Page-wide color extractor.
  *
- * Pipeline position: inspect, page-scoped. It reads the live dom directly and does not run the element pipeline.
- * Reads from DOM: document/window. This runs live, so the page must be loaded.
- * Writes to: nothing. This is pure extraction with no side effects.
- *
- * Principles applied: none. This is extraction.
- *
- * Why this exists: the colors inspector lists every color the page paints,
- * perceptually clustered so near-duplicate shades collapse into one swatch, most-
- * used first. Clustering is greedy in Oklab space, the perceptually uniform color
- * model, so visually identical colors that differ by a hex digit merge while
- * distinct colors stay apart. The color-valued css custom properties ride along as
- * context for the optional ai role pass (inspect/ai.ts). Ported by rewriting from v1
- * colors/color-extractor.ts, preserving the Oklab clustering verbatim and dropping
- * the per-element / oklch / member-count fields the panel never showed.
+ * This is a page-scan inspector that reads the live dom directly and does not run the element
+ * pipeline. It needs the page loaded, reads document and window, and writes nothing, a pure
+ * extraction. The colors inspector lists every color the
+ * page paints, perceptually clustered so near-duplicate shades collapse into one swatch,
+ * most-used first. Clustering is greedy in Oklab space, the perceptually uniform color model, so
+ * visually identical colors that differ by a hex digit merge while distinct colors stay apart.
+ * The color-valued css custom properties ride along as context for the optional ai role pass
+ * (inspect/ai.ts). This was ported and rewritten from v1 colors/color-extractor.ts, preserving
+ * the Oklab clustering verbatim and dropping the per-element, oklch, and member-count fields the
+ * panel never showed.
  */
 import type { ColorReport } from './types';
 
@@ -28,15 +24,15 @@ const COLOR_PROPERTIES = [
 /** Non-paint tags skipped during the walk. */
 const SKIP_TAGS = new Set(['SCRIPT', 'NOSCRIPT', 'STYLE', 'TEMPLATE', 'IFRAME', 'LINK', 'META', 'HEAD', 'BASE', 'BR', 'WBR']);
 
-/** Values that carry no palette signal: fully transparent, absent, or keyword. */
+/** Values that carry no palette signal, fully transparent, absent, or keyword. */
 const IGNORE_COLORS = new Set(['rgba(0, 0, 0, 0)', 'transparent', 'initial', 'inherit', 'currentcolor']);
 
-/** Caps mirrored from v1: the walk, the shadow-color pass, and the shipped swatch count. */
+/** Caps mirrored from v1 for the walk, the shadow-color pass, and the shipped swatch count. */
 const MAX_ELEMENTS = 2000;
 const MAX_SHADOW_ELEMENTS = 500;
 const MAX_SWATCHES = 30;
 
-/** Greedy Oklab merge distance; below this, two colors are one swatch. */
+/** Greedy Oklab merge distance. Below this, two colors are one swatch. */
 const CLUSTER_THRESHOLD = 0.04;
 
 /** One distinct color and how many elements paint with it. */
@@ -46,7 +42,7 @@ interface RawColor {
 	count: number;
 }
 
-/** The colors inspector result: clustered swatches plus the css color variables. */
+/** The colors inspector result, clustered swatches plus the css color variables. */
 export interface ColorExtraction {
 	colors: ColorReport[];
 	cssVariables: Record<string, string>;
@@ -103,7 +99,7 @@ function tally(raw: Map<string, RawColor>, parsed: { r: number; g: number; b: nu
 	else raw.set(hex, { hex, rgb: parsed, count: 1 });
 }
 
-/** Color-valued css custom properties declared on :root / html, the named tokens. */
+/** Color-valued css custom properties declared on :root and html, the named tokens. */
 function collectColorVariables(): Record<string, string> {
 	const vars: Record<string, string> = {};
 	const rootStyle = getComputedStyle(document.documentElement);
@@ -167,7 +163,7 @@ function clusterColors(colors: RawColor[]): ColorReport[] {
 }
 
 /**
- * Parses a css color to rgb, dropping near-transparent values. The rgb/rgba fast
+ * Parses a css color to rgb, dropping near-transparent values. The rgb and rgba fast
  * path covers computed styles, which are always serialized that way. Named colors and other
  * notations fall back to a 1x1 canvas paint.
  */

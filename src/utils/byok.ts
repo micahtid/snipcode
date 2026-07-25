@@ -1,9 +1,9 @@
 /**
- * utils/byok.ts: bring-your-own-key provider config + validation.
+ * utils/byok.ts holds bring-your-own-key provider config and validation.
  *
  * This is not part of the pipeline. It configures the polish phase.
  *
- * Why this exists: snipcode never ships a key and never proxies requests. This module holds
+ * Why this exists. Snipcode never ships a key and never proxies requests. This module holds
  * the four supported providers' default models and endpoints, and the "test key" validation.
  * Validation fetches the provider directly from the sidebar. The manifest CSP whitelists all
  * four hosts for extension pages, so no background round-trip is needed and the key never

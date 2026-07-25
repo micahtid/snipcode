@@ -1,23 +1,17 @@
 /**
- * inspect/schema/extract.ts: the page-schema extractor
+ * The page-schema extractor.
  *
- * Pipeline position: inspect, page-scoped. It reads the live dom directly and does not run the element pipeline.
- * Reads from DOM: document/window. This runs live, so the whole page must be loaded.
- * Writes to: nothing. This is pure extraction, and it returns a PageSchema.
- *
- * Principles applied: none. This is extraction.
- *
- * Why this exists: the schema inspector turns a whole page into a compressed
- * design-system schema. It walks the visible dom, stratified by section so a long
- * page samples evenly, collects the color / font / spacing / radius / shadow
- * tokens, dedupes elements into a style map and a structure tree, lifts
- * interactive-state rules from the readable stylesheets, and detects section
- * blueprints and the button, card, and nav component blueprints plus the page's
- * decorative and responsive language. The result is optimized (inspect/schema/optimize.ts) and,
- * with a key, synthesized by the ai pass (inspect/ai.ts). Ported by rewriting from
- * v1 schema/schema-extractor.ts as plain functions, dropping the class/logger
- * ceremony and v1's discarded root-variable pass. Cross-origin stylesheets are read
- * only when same-origin-readable, matching the other page-scoped inspectors.
+ * This is a page-scan inspector that reads the live dom directly and does not run the element
+ * pipeline. The whole page must be loaded. It reads document and window and writes nothing, a pure
+ * extraction that returns a PageSchema. It walks the visible dom, stratified by section so a
+ * long page samples evenly, collects the color, font, spacing, radius, and shadow tokens, dedupes
+ * elements into a style map and a structure tree, lifts interactive-state rules from the readable
+ * stylesheets, and detects section blueprints and the button, card, and nav component blueprints
+ * plus the page's decorative and responsive language. The result is optimized
+ * (inspect/schema/optimize.ts) and, with a key, synthesized by the ai pass (inspect/ai.ts). This
+ * was ported and rewritten from v1 schema/schema-extractor.ts as plain functions, dropping the
+ * class and logger ceremony and v1's discarded root-variable pass. Cross-origin stylesheets are
+ * read only when same-origin-readable, matching the other page-scoped inspectors.
  */
 import { computeFingerprint } from './fingerprint';
 import { classifyElement, classNameOf, isElementVisible, SKIP_TAGS, type SemanticRole } from './classify';
@@ -44,7 +38,7 @@ interface WalkedElement {
 const COLOR_PROPS = ['color', 'background-color', 'border-color', 'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color'];
 const SPACING_PROPS = ['padding-top', 'padding-right', 'padding-bottom', 'padding-left', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left', 'gap'];
 
-/** A button element or a link styled as a button. This is shared across the button-detection passes. */
+/** A button element or a link styled as a button, shared across the button-detection passes. */
 const BUTTON_SELECTOR = 'button, a[class*="btn"], a[class*="button"]';
 
 /** Whether a normalized color value is fully transparent, painting nothing. */
@@ -160,12 +154,12 @@ function readableRules(): CSSRule[] {
 }
 
 // ---------------------------------------------------------------------------
-// DOM walk: stratified, visible elements only
+// DOM walk of stratified visible elements only
 // ---------------------------------------------------------------------------
 
 /**
  * Walks the visible dom, capturing each element's role, fingerprint, and tree
- * position. Sampling is stratified: each top-level section gets a share of the
+ * position. Sampling is stratified. Each top-level section gets a share of the
  * element budget proportional to its size, so a long section cannot crowd out the
  * rest. Once a section exceeds its budget it is sampled every third element.
  */
@@ -184,7 +178,7 @@ function walkDOM(): WalkedElement[] {
 		return el.ownerDocument !== document; // Inside an iframe.
 	};
 
-	// First pass: size each top-level section so the budget can be split proportionally.
+	// First pass, size each top-level section so the budget can be split proportionally.
 	const topSections: Array<{ el: Element; count: number }> = [];
 	for (let i = 0; i < document.body.children.length; i++) {
 		const child = document.body.children[i]!;
@@ -219,7 +213,7 @@ function walkDOM(): WalkedElement[] {
 			const currentCount = sectionCounts.get(topSection) || 0;
 			const budget = sectionBudgets.get(topSection) || MAX_ELEMENTS;
 
-			// Over budget: keep descending but sample only every third element.
+			// Over budget, keep descending but sample only every third element.
 			if (currentCount >= budget && currentCount % 3 !== 0) {
 				sectionCounts.set(topSection, currentCount + 1);
 				walk(el, depth + 1);
@@ -251,7 +245,7 @@ function walkDOM(): WalkedElement[] {
 	return elements;
 }
 
-/** Colors painted by an element's ::before / ::after content, when it has content. */
+/** Colors painted by an element's ::before and ::after content, when it has content. */
 function extractPseudoColors(el: Element): string[] {
 	const colors: string[] = [];
 	for (const pseudo of ['::before', '::after'] as const) {
@@ -517,11 +511,11 @@ function analyzeConsistency(
 }
 
 // ---------------------------------------------------------------------------
-// Pattern detection + deduplication
+// Pattern detection and deduplication
 // ---------------------------------------------------------------------------
 
 /**
- * Groups elements by role+fingerprint to find repeated component patterns, meaning
+ * Groups elements by role and fingerprint to find repeated component patterns, meaning
  * 3+ of a non-generic role, and produces a run-length-collapsed list where consecutive
  * identical elements carry a `repeat` count instead of repeating.
  */
@@ -564,7 +558,7 @@ function detectPatterns(walked: WalkedElement[]): { deduplicated: WalkedElement[
 // Interactive-state rules
 // ---------------------------------------------------------------------------
 
-/** Lifts hover/focus/active rules from the stylesheets that target walked elements. */
+/** Lifts hover, focus, and active rules from the stylesheets that target walked elements. */
 function extractStates(rules: CSSRule[], walked: WalkedElement[]): StateRule[] {
 	const states: StateRule[] = [];
 	const statePattern = /:(?:hover|focus|active|focus-visible)/;
@@ -604,7 +598,7 @@ function extractStates(rules: CSSRule[], walked: WalkedElement[]): StateRule[] {
 }
 
 // ---------------------------------------------------------------------------
-// Style map + structure tree
+// Style map and structure tree
 // ---------------------------------------------------------------------------
 
 /** Builds the deduped style map, one entry per fingerprint, and the structure tree. */
@@ -649,7 +643,7 @@ function buildTree(walked: WalkedElement[], fingerprintToId: Map<string, string>
 }
 
 // ---------------------------------------------------------------------------
-// Section blueprints + content patterns
+// Section blueprints and content patterns
 // ---------------------------------------------------------------------------
 
 /** Detects the page's top-level sections and each section's composition. */
@@ -709,7 +703,7 @@ function extractSections(): SectionBlueprint[] {
 	return sections;
 }
 
-/** Classifies a section into a semantic type by structure, then class/id, then content. */
+/** Classifies a section into a semantic type by structure, then class and id, then content. */
 function classifySectionType(el: Element): SectionType {
 	const tag = el.tagName.toLowerCase();
 	const text = (el.textContent || '').toLowerCase().slice(0, 500);
@@ -787,7 +781,7 @@ function classifySectionType(el: Element): SectionType {
 	return 'content';
 }
 
-/** Reads a section's layout pattern from its own or its inner container's flex/grid. */
+/** Reads a section's layout pattern from its own or its inner container's flex or grid. */
 function detectLayoutPattern(el: Element): LayoutPattern {
 	const targets = [el];
 	const inner = el.querySelector('[class*="container"], [class*="wrapper"], [class*="inner"], [class*="content"], [class*="grid"]');
@@ -832,7 +826,7 @@ function detectLayoutPattern(el: Element): LayoutPattern {
 	return 'single-column';
 }
 
-/** Reads a section's alignment from text-align / align-items. */
+/** Reads a section's alignment from text-align and align-items. */
 function detectAlignment(computed: CSSStyleDeclaration): 'left' | 'center' | 'right' {
 	if (computed.textAlign === 'center' || computed.alignItems === 'center') return 'center';
 	if (computed.textAlign === 'right' || computed.alignItems === 'flex-end') return 'right';
@@ -932,7 +926,7 @@ function findSubPatterns(elements: string[]): string[][] {
 // Component blueprints
 // ---------------------------------------------------------------------------
 
-/** Extracts the top button variants with their full visual spec and hover/active states. */
+/** Extracts the top button variants with their full visual spec and hover and active states. */
 function extractButtonBlueprints(walked: WalkedElement[], states: StateRule[]): ButtonBlueprint[] {
 	const buttons = walked.filter((el) => el.role === 'button');
 	if (buttons.length === 0) return [];
@@ -1067,7 +1061,7 @@ function detectCardInnerLayout(el: Element): string {
 	return parts.length > 0 ? parts.join(' + ') : 'unknown';
 }
 
-/** Extracts the page navigation's spec: bg, position, blur, border, layout, and link count. */
+/** Extracts the page navigation's spec, its bg, position, blur, border, layout, and link count. */
 function extractNavBlueprint(): NavBlueprint | null {
 	const nav = document.querySelector('nav') || document.querySelector('header nav') || document.querySelector('[role="navigation"]');
 	if (!nav) return null;
@@ -1098,7 +1092,7 @@ function extractNavBlueprint(): NavBlueprint | null {
 	};
 }
 
-/** Detects the page's decorative language: blobs, gradients, illustration style, accents. */
+/** Detects the page's decorative language, blobs, gradients, illustration style, accents. */
 function extractDecorativeInfo(): DecorativeInfo {
 	let hasBlobs = false;
 	let hasGradientBgs = false;
@@ -1203,7 +1197,7 @@ function getTextPlaceholder(el: WalkedElement): string | undefined {
 	}
 }
 
-/** Infers a font's role, heading / body / ui / mixed, from the roles it appears in. */
+/** Infers a font's role, heading, body, ui, or mixed, from the roles it appears in. */
 function inferFontUsage(roles: Set<string>): string {
 	if (roles.has('heading')) return 'heading';
 	if (roles.has('paragraph') || roles.has('text')) return 'body';
@@ -1223,7 +1217,7 @@ function normalizeColor(value: string): string | null {
 	return value;
 }
 
-/** True when an anchor is styled like a button, with btn/button/cta in its class list. */
+/** True when an anchor is styled like a button, with btn, button, or cta in its class list. */
 function isButtonLike(el: Element): boolean {
 	return /btn|button|cta/.test(classNameOf(el));
 }

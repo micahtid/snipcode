@@ -1,17 +1,13 @@
 /**
- * assistive/emit.ts: assistive json build + delivery.
+ * Assistive json build and delivery.
  *
- * Pipeline position: capture. Assistive runs the capture phase, then emits.
- * Reads from Captured: page, capturedAt, element, screenshot, stylesheets, root.
- * It does not write to Captured. It returns and delivers the json.
- *
- * No principles apply here, since this is serialization and io.
- *
- * Why this exists: assistive mode produces a json document a coding agent can act on, rather
- * than code. The document holds the page url, both selectors, the bounding box, and the asset
- * manifest. This builds that document verbatim to the assistive schema and delivers it by the
- * user's chosen channels: clipboard, file, or webhook. Delivery failures never throw, and
- * each channel is attempted independently.
+ * Assistive runs the capture phase, then emits. It reads page, capturedAt, element,
+ * screenshot, stylesheets, and root from Captured, and does not write back, returning and
+ * delivering the json instead. Assistive mode produces a json document a coding agent can act
+ * on, rather than code. The document holds the page url, both selectors, the bounding box, and
+ * the asset manifest. This builds that document verbatim to the assistive schema and delivers
+ * it by the user's chosen channels, clipboard, file, or webhook. Delivery failures never
+ * throw, and each channel is attempted independently.
  */
 import type { Captured, UserPreferences } from '../types';
 import { describeElement } from './selectors';
@@ -52,7 +48,7 @@ export function buildAssistiveJson(captured: Captured): AssistiveDoc {
  * best-effort. A failure is recorded, never thrown.
  *
  * @param doc - the assistive document
- * @param prefs - user preferences: delivery channels and webhook url
+ * @param prefs - user preferences, the delivery channels and webhook url
  * @returns the warnings accumulated across channels
  */
 export async function deliver(doc: AssistiveDoc, prefs: UserPreferences): Promise<string[]> {

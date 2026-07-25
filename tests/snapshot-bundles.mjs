@@ -1,4 +1,4 @@
-// Snapshot-bundles: for each bundle in training-data/, navigate to the captured
+// For each bundle in training-data/, navigate to the captured
 // url at the captured viewport, locate the element by the captured css selector,
 // and screenshot just that element (tight crop). Saves as original.jpg next to
 // source.json (was 0-screenshot.jpg in v1).
@@ -14,9 +14,9 @@ import os from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const DEFAULT_DATA_DIR = path.join(os.homedir(), 'Downloads', 'training-data');
-const SETTLE_MS = 400; // Beat after fonts.ready for heavy layout/animation libs.
+const SETTLE_MS = 400; // Beat after fonts.ready for heavy layout and animation libs.
 
-// Consent-management-platform hosts. Their scripts inject a cookie/consent banner on a
+// Consent-management-platform hosts. Their scripts inject a cookie or consent banner on a
 // post-load timer and re-assert it against DOM hiding, so they fight the paint-based
 // overlay strip. Blocking the script at the network layer is deterministic. The banner
 // never loads, so the reference shows the component, not the consent chrome. This is a
@@ -64,7 +64,7 @@ async function findBundles(dataDir) {
  * This is universal by construction. An overlay is found by how it paints, never by a name
  * or class pattern (which only ever catches the banners we happened to list). An element is
  * "foreign" when it is neither the target, a descendant (part of the snip), nor an
- * ancestor (hiding it would hide the snip). Two paint signals together catch any overlay:
+ * ancestor (hiding it would hide the snip). Two paint signals together catch any overlay.
  *  - any foreign element pinned to the viewport (position fixed or sticky), because such
  *    an element pins over an element screenshot at every scroll offset (the sticky-nav
  *    case), and
@@ -91,7 +91,7 @@ async function hideOverlays(page, selector) {
 		const hidden = await page.evaluate((sel) => {
 			const target = document.querySelector(sel);
 			if (!target) return 0;
-			// Foreign: outside the snip's own subtree and not one of its ancestors.
+			// Foreign means outside the snip's own subtree and not one of its ancestors.
 			const isForeign = (el) => !!el && el !== target && !target.contains(el) && !el.contains(target);
 			// The outermost still-foreign ancestor, so a whole banner is hidden, not a leaf.
 			const outermostForeign = (el) => {
@@ -101,7 +101,7 @@ async function hideOverlays(page, selector) {
 			};
 			const roots = new Set();
 
-			// Signal 1: viewport-pinned chrome pollutes an element screenshot at any scroll.
+			// Signal 1 is viewport-pinned chrome, which pollutes an element screenshot at any scroll.
 			// Skip nodes already hidden by a prior pass so the pass count converges.
 			for (const el of document.documentElement.querySelectorAll('*')) {
 				if (!isForeign(el)) continue;
@@ -110,7 +110,7 @@ async function hideOverlays(page, selector) {
 				if (cs.position === 'fixed' || cs.position === 'sticky') roots.add(outermostForeign(el));
 			}
 
-			// Signal 2: anything the hit-test paints above the target inside its box (hidden
+			// Signal 2 is anything the hit-test paints above the target inside its box (hidden
 			// nodes are not hit-tested, so this never re-finds an already-hidden overlay).
 			const rect = target.getBoundingClientRect();
 			if (rect.width > 0 && rect.height > 0) {
@@ -134,7 +134,7 @@ async function hideOverlays(page, selector) {
 			for (const el of roots) el.style.setProperty('visibility', 'hidden', 'important');
 			return roots.size;
 		}, selector).catch(() => 0);
-		if (!hidden) break; // Converged: nothing foreign paints over the target.
+		if (!hidden) break; // Converged, nothing foreign paints over the target.
 		await page.waitForTimeout(200); // Let a re-mount settle before the next pass.
 	}
 }
@@ -191,7 +191,7 @@ async function snapshotBundle(browser, bundle) {
 export async function snapshotAll(opts = {}) {
 	const dataDir = opts.dataDir ?? DEFAULT_DATA_DIR;
 	let bundles = await findBundles(dataDir);
-	// --only <substring>: restrict to bundles whose "tier/name" contains it, so a few
+	// --only <substring> restricts to bundles whose "tier/name" contains it, so a few
 	// popup-polluted references can be re-captured without redoing the whole corpus.
 	if (opts.only) bundles = bundles.filter((b) => `${b.tier}/${b.name}`.includes(opts.only));
 	if (bundles.length === 0) throw new Error(`no bundles with source.json found under ${dataDir}` + (opts.only ? ` matching "${opts.only}"` : ''));
