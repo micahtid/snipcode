@@ -118,7 +118,7 @@ fidelity harness is separate: run `node tests/run-pipeline.mjs` to snip the froz
 `node tests/split-render.mjs` to check the split file set renders the same as the self
 contained document.
 
-Contributions are welcome. Open an issue at https://github.com/micahtid/snip-code/issues to
+Contributions are welcome. Open an issue at https://github.com/micahtid/snipcode/issues to
 report a bug or suggest a feature.
 
 ## License
