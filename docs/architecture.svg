@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1384 1000" width="1384" height="1000" role="img" aria-label="How a snip goes from the selected element to the final component code">
+  <style>
+    text { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 14px; fill: #1f2328; text-anchor: middle; dominant-baseline: central; }
+    .sub { font-size: 12px; fill: #57606a; }
+    .folder { font-size: 13px; font-weight: 600; fill: #57606a; text-anchor: start; }
+    .capture { fill: #d8e6ff; } .p-capture { fill: #f2f6ff; }
+    .reconcile { fill: #ffd8e4; } .p-reconcile { fill: #fff3f7; }
+    .resolve { fill: #e5dbff; } .p-resolve { fill: #f7f3ff; }
+    .convert { fill: #d3efdc; } .p-convert { fill: #f0f9f3; }
+    .minimize { fill: #fff1b8; } .p-minimize { fill: #fffbe6; }
+    .polish { fill: #f3d7f1; } .p-polish { fill: #fcf1fb; }
+    .ext { fill: #eaeef2; }
+    .ln { fill: none; stroke: #6e7781; stroke-width: 1.6; stroke-linecap: butt; }
+    .head { fill: #6e7781; }
+    @media (prefers-color-scheme: dark) {
+      text { fill: #f0f6fc; }
+      .sub, .folder { fill: #c9d1d9; }
+      .capture { fill: #34507e; } .p-capture { fill: #263147; }
+      .reconcile { fill: #7a3a52; } .p-reconcile { fill: #3d2630; }
+      .resolve { fill: #4f4180; } .p-resolve { fill: #312a47; }
+      .convert { fill: #326343; } .p-convert { fill: #253a2d; }
+      .minimize { fill: #6b5a1e; } .p-minimize { fill: #3a3320; }
+      .polish { fill: #66395f; } .p-polish { fill: #39263a; }
+      .ext { fill: #3d444d; }
+      .ln { stroke: #a0a8b0; }
+      .head { fill: #a0a8b0; }
+    }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path class="head" d="M0 1 L10 5 L0 9 Z"/>
+    </marker>
+  </defs>
+
+  <!-- Phase panels -->
+  <rect class="p-capture" x="296" y="128" width="1064" height="132" rx="14"/><text class="folder" x="316" y="152">Capture</text>
+  <rect class="p-reconcile" x="568" y="404" width="792" height="132" rx="14"/><text class="folder" x="588" y="428">Reconcile</text>
+  <rect class="p-resolve" x="24" y="404" width="520" height="296" rx="14"/><text class="folder" x="44" y="428">Resolve</text>
+  <rect class="p-convert" x="568" y="568" width="792" height="132" rx="14"/><text class="folder" x="588" y="592">Convert</text>
+  <rect class="p-minimize" x="840" y="740" width="520" height="132" rx="14"/><text class="folder" x="860" y="764">Minimize (HTML and BEM Only)</text>
+  <rect class="p-polish" x="296" y="740" width="520" height="132" rx="14"/><text class="folder" x="316" y="764">Polish (Optional, Needs an API Key)</text>
+
+  <!-- Lines. Each one is a single straight segment. -->
+  <path class="ln" d="M248 56 H320" marker-end="url(#a)"/>
+  <path class="ln" d="M520 56 H592" marker-end="url(#a)"/>
+  <path class="ln" d="M420 88 V172" marker-end="url(#a)"/>
+  <path class="ln" d="M520 204 H592" marker-end="url(#a)"/>
+  <path class="ln" d="M792 204 H864" marker-end="url(#a)"/>
+  <path class="ln" d="M1064 204 H1136" marker-end="url(#a)"/>
+  <path class="ln" d="M1236 236 V300" marker-end="url(#a)"/>
+  <path class="ln" d="M1136 332 H1064" marker-end="url(#a)"/>
+  <path class="ln" d="M1236 364 V448" marker-end="url(#a)"/>
+  <path class="ln" d="M1136 480 H1064" marker-end="url(#a)"/>
+  <path class="ln" d="M864 480 H792" marker-end="url(#a)"/>
+  <path class="ln" d="M592 480 H520" marker-end="url(#a)"/>
+  <path class="ln" d="M320 480 H248" marker-end="url(#a)"/>
+  <path class="ln" d="M148 512 V612" marker-end="url(#a)"/>
+  <path class="ln" d="M248 644 H320" marker-end="url(#a)"/>
+  <path class="ln" d="M520 644 H592" marker-end="url(#a)"/>
+  <path class="ln" d="M792 644 H864" marker-end="url(#a)"/>
+  <path class="ln" d="M1064 644 H1136" marker-end="url(#a)"/>
+  <path class="ln" d="M1236 676 V784" marker-end="url(#a)"/>
+  <path class="ln" d="M1136 816 H1064" marker-end="url(#a)"/>
+  <path class="ln" d="M864 816 H792" marker-end="url(#a)"/>
+  <path class="ln" d="M592 816 H520" marker-end="url(#a)"/>
+  <path class="ln" d="M320 816 H248" marker-end="url(#a)"/>
+  <path class="ln" d="M148 848 V912" marker-end="url(#a)"/>
+
+  <!-- Boxes -->
+  <rect class="ext" x="48" y="24" width="200" height="64" rx="10"/><text x="148" y="46">Pick an Element</text><text class="sub" x="148" y="67">Click it on the page</text>
+  <rect class="capture" x="320" y="24" width="200" height="64" rx="10"/><text x="420" y="46">Builder Check</text><text class="sub" x="420" y="67">Is it a site builder?</text>
+  <rect class="ext" x="592" y="24" width="200" height="64" rx="10"/><text x="692" y="46">Unsupported</text><text class="sub" x="692" y="67">Framer, Wix, and more</text>
+  <rect class="capture" x="320" y="172" width="200" height="64" rx="10"/><text x="420" y="194">Settle</text><text class="sub" x="420" y="215">Wait for it to fully load</text>
+  <rect class="capture" x="592" y="172" width="200" height="64" rx="10"/><text x="692" y="194">Clone</text><text class="sub" x="692" y="215">Copy markup and all CSS</text>
+  <rect class="capture" x="864" y="172" width="200" height="64" rx="10"/><text x="964" y="194">Recover Styles</text><text class="sub" x="964" y="215">Inherited and cross-origin</text>
+  <rect class="capture" x="1136" y="172" width="200" height="64" rx="10"/><text x="1236" y="194">Measure States</text><text class="sub" x="1236" y="215">Force interactive states</text>
+  <rect class="ext" x="1136" y="300" width="200" height="64" rx="10"/><text x="1236" y="322">Snip or Assistive?</text><text class="sub" x="1236" y="343">Code or JSON output</text>
+  <rect class="ext" x="864" y="300" width="200" height="64" rx="10"/><text x="964" y="322">Assistive JSON</text><text class="sub" x="964" y="343">Element metadata only</text>
+  <rect class="reconcile" x="1136" y="448" width="200" height="64" rx="10"/><text x="1236" y="470">Bake Styles</text><text class="sub" x="1236" y="491">Lock in rendered styles</text>
+  <rect class="reconcile" x="864" y="448" width="200" height="64" rx="10"/><text x="964" y="470">Handle Features</text><text class="sub" x="964" y="491">Icons, queries, and more</text>
+  <rect class="reconcile" x="592" y="448" width="200" height="64" rx="10"/><text x="692" y="470">Remove Noise</text><text class="sub" x="692" y="491">Drop styles with no effect</text>
+  <rect class="resolve" x="320" y="448" width="200" height="64" rx="10"/><text x="420" y="470">Resolve Variables</text><text class="sub" x="420" y="491">Replace var() with values</text>
+  <rect class="resolve" x="48" y="448" width="200" height="64" rx="10"/><text x="148" y="470">Fonts and Keyframes</text><text class="sub" x="148" y="491">Find used fonts and animations</text>
+  <rect class="resolve" x="48" y="612" width="200" height="64" rx="10"/><text x="148" y="634">Standalone Check</text><text class="sub" x="148" y="655">Fix any visual mismatch</text>
+  <rect class="resolve" x="320" y="612" width="200" height="64" rx="10"/><text x="420" y="634">Inline Assets</text><text class="sub" x="420" y="655">Embed fonts and images</text>
+  <rect class="convert" x="592" y="612" width="200" height="64" rx="10"/><text x="692" y="634">Emit Format</text><text class="sub" x="692" y="655">HTML, JSX, Tailwind, or Vue</text>
+  <rect class="convert" x="864" y="612" width="200" height="64" rx="10"/><text x="964" y="634">Clean</text><text class="sub" x="964" y="655">Drop CSS nothing uses</text>
+  <rect class="convert" x="1136" y="612" width="200" height="64" rx="10"/><text x="1236" y="634">Assemble</text><text class="sub" x="1236" y="655">Combine and pretty-print</text>
+  <rect class="minimize" x="1136" y="784" width="200" height="64" rx="10"/><text x="1236" y="806">Shrink CSS</text><text class="sub" x="1236" y="827">Prune, fold, and merge</text>
+  <rect class="minimize" x="864" y="784" width="200" height="64" rx="10"/><text x="964" y="806">Verify</text><text class="sub" x="964" y="827">Reject any visual change</text>
+  <rect class="polish" x="592" y="784" width="200" height="64" rx="10"/><text x="692" y="806">Rename</text><text class="sub" x="692" y="827">Your model names classes</text>
+  <rect class="polish" x="320" y="784" width="200" height="64" rx="10"/><text x="420" y="806">Verify</text><text class="sub" x="420" y="827">Revert on visual change</text>
+  <rect class="convert" x="48" y="784" width="200" height="64" rx="10"/><text x="148" y="806">Split Assets</text><text class="sub" x="148" y="827">Move SVGs and images to files</text>
+  <rect class="ext" x="48" y="912" width="200" height="64" rx="10"/><text x="148" y="934">Done</text><text class="sub" x="148" y="955">Show and save the result</text>
+</svg>

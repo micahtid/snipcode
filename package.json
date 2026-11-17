@@ -1,6 +1,6 @@
 {
   "name": "snipcode",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Snip any element on any page into clean, framework-formatted code or a structured assistive JSON document. Local-only, BYOK.",
   "private": true,
   "type": "module",
